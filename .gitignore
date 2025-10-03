@@ -94,3 +94,10 @@ jspm_packages/
 
 # Test data and sample files
 sample_eval_data/
+
+# Python/MkDocs
+site/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
