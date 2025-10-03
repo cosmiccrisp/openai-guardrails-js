@@ -130,7 +130,7 @@ await eval.run('Evaluating my dataset');
 - `dist/` - Compiled JavaScript output
 - `src/checks/` - Built-in guardrail checks
 - `src/evals/` - Evaluation framework
-- `src/examples/` - Example usage and sample data
+- `examples/` - Example usage and sample data
 
 ## Examples
 
