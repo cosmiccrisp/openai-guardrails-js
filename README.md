@@ -5,12 +5,13 @@ A TypeScript framework for building safe and reliable AI systems with OpenAI Gua
 ## Installation
 
 ### Local Development
+
 Clone the repository and install locally:
 
 ```bash
 # Clone the repository
 git clone https://github.com/openai/openai-guardrails-js.git
-cd guardrails-js
+cd openai-guardrails-js
 
 # Install dependencies
 npm install
@@ -22,64 +23,61 @@ npm run build
 ## Quick Start
 
 ### Drop-in OpenAI Replacement
+
 The easiest way to use Guardrails TypeScript is as a drop-in replacement for the OpenAI client:
 
 ```typescript
 import { GuardrailsOpenAI } from '@openai/guardrails';
 
 async function main() {
-    // Use GuardrailsOpenAI instead of OpenAI
-    const client = await GuardrailsOpenAI.create({
-        version: 1,
-        output: {
-            version: 1,
-            guardrails: [
-                {"name": "Moderation", "config": {"categories": ["hate", "violence"]}}
-            ]
-        }
+  // Use GuardrailsOpenAI instead of OpenAI
+  const client = await GuardrailsOpenAI.create({
+    version: 1,
+    output: {
+      version: 1,
+      guardrails: [{ name: 'Moderation', config: { categories: ['hate', 'violence'] } }],
+    },
+  });
+
+  try {
+    const response = await client.responses.create({
+      model: 'gpt-5',
+      input: 'Hello world',
     });
-    
-    try {
-        const response = await client.responses.create({
-            model: "gpt-5",
-            input: "Hello world"
-        });
-        
-        // Access OpenAI response via .llm_response
-        console.log(response.llm_response.output_text);
-        
-    } catch (error) {
-        if (error.constructor.name === 'GuardrailTripwireTriggered') {
-            console.log(`Guardrail triggered: ${error.guardrailResult.info}`);
-        }
+
+    // Access OpenAI response via .llm_response
+    console.log(response.llm_response.output_text);
+  } catch (error) {
+    if (error.constructor.name === 'GuardrailTripwireTriggered') {
+      console.log(`Guardrail triggered: ${error.guardrailResult.info}`);
     }
+  }
 }
 
 main();
 ```
 
 ### Agents SDK Integration
+
 ```typescript
 import { GuardrailAgent } from '@openai/guardrails';
-import { Runner } from '@openai/agents';
+import { run } from '@openai/agents';
 
 // Create agent with guardrails automatically configured
 const agent = new GuardrailAgent({
-    config: {
-        version: 1,
-        output: {
-            version: 1,
-            guardrails: [
-                {"name": "Moderation", "config": {"categories": ["hate", "violence"]}}
-            ]
-        }
+  config: {
+    version: 1,
+    output: {
+      version: 1,
+      guardrails: [{ name: 'Moderation', config: { categories: ['hate', 'violence'] } }],
     },
-    name: "Customer support agent",
-    instructions: "You are a helpful customer support agent."
+  },
+  name: 'Customer support agent',
+  instructions: 'You are a helpful customer support agent.',
 });
 
 // Use exactly like a regular Agent
-const result = await Runner.run(agent, "Hello, can you help me?");
+const result = await run(agent, 'Hello, can you help me?');
 ```
 
 ## Evaluation Framework
@@ -89,11 +87,11 @@ The evaluation framework allows you to test guardrail performance on datasets an
 ### Running Evaluations
 
 **Using the CLI:**
+
 ```bash
 npm run build
 npm run eval -- --config-path src/evals/sample_eval_data/nsfw_config.json --dataset-path src/evals/sample_eval_data/nsfw_eval.jsonl
 ```
-
 
 ### Dataset Format
 
@@ -116,21 +114,22 @@ Datasets must be in JSONL format, with each line containing a JSON object:
 import { GuardrailEval } from '@openai/guardrails';
 
 const eval = new GuardrailEval(
-    'configs/my_guardrails.json',
-    'data/demo_data.jsonl',
-    32,  // batch size
-    'results'  // output directory
+  'configs/my_guardrails.json',
+  'data/demo_data.jsonl',
+  32, // batch size
+  'results' // output directory
 );
 
 await eval.run('Evaluating my dataset');
 ```
 
 ### Project Structure
+
 - `src/` - TypeScript source code
 - `dist/` - Compiled JavaScript output
 - `src/checks/` - Built-in guardrail checks
 - `src/evals/` - Evaluation framework
-- `src/examples/` - Example usage and sample data
+- `examples/` - Example usage and sample data
 
 ## Examples
 
@@ -146,6 +145,7 @@ The package includes comprehensive examples in the [`examples/` directory](https
 ### Running Examples
 
 #### Prerequisites
+
 Before running examples, you need to build the package:
 
 ```bash
@@ -159,9 +159,11 @@ npm run build
 #### Running Individual Examples
 
 **Using tsx (Recommended)**
+
 ```bash
-cd examples/basic
-npx tsx hello_world.ts                   # Basic chatbot with guardrails
+npx tsx examples/basic/hello_world.ts
+npx tsx examples/basic/streaming.ts
+npx tsx examples/basic/agents_sdk.ts
 ```
 
 ## Available Guardrails
@@ -182,6 +184,6 @@ MIT License - see LICENSE file for details.
 
 ## Disclaimers
 
-Please note that Guardrails may use Third-Party Services such as the [Presidio open-source framework](https://github.com/microsoft/presidio), which are subject to their own terms and conditions and are not developed or verified by OpenAI.  For more information on configuring guardrails, please visit: [platform.openai.com/guardrails](https://platform.openai.com/guardrails)
+Please note that Guardrails may use Third-Party Services such as the [Presidio open-source framework](https://github.com/microsoft/presidio), which are subject to their own terms and conditions and are not developed or verified by OpenAI. For more information on configuring guardrails, please visit: [platform.openai.com/guardrails](https://platform.openai.com/guardrails)
 
 Developers are responsible for implementing appropriate safeguards to prevent storage or misuse of sensitive or prohibited content (including but not limited to personal data, child sexual abuse material, or other illegal content). OpenAI disclaims liability for any logging or retention of such content by developers. Developers must ensure their systems comply with all applicable data protection and content safety laws, and should avoid persisting any blocked content generated or intercepted by Guardrails.
