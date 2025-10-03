@@ -19,7 +19,7 @@
         "test:run": "vitest run",
         "lint": "eslint src --ext .ts",
         "lint:fix": "eslint src --ext .ts --fix",
-        "format": "prettier --write src/**/*.ts",
+        "format": "prettier --write \"**/*.{cjs,cts,js,json,mjs,mts,ts}\"",
         "prepublishOnly": "npm run clean && npm run build",
         "cli": "node dist/cli.js",
         "eval": "node dist/cli.js eval",
