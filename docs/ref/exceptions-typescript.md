@@ -1,6 +1,6 @@
 # Exceptions: TypeScript
 
-Exception classes raised by `@guardrails/guardrails-ts`.
+Exception classes raised by `@openai/guardrails`.
 
 ```typescript
 export class GuardrailError extends Error {}

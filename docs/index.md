@@ -27,7 +27,7 @@
 ## Quickstart
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 async function main() {
   const client = await GuardrailsOpenAI.create({

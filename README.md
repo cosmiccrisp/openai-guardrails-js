@@ -25,7 +25,7 @@ npm run build
 The easiest way to use Guardrails TypeScript is as a drop-in replacement for the OpenAI client:
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 async function main() {
     // Use GuardrailsOpenAI instead of OpenAI
@@ -60,7 +60,7 @@ main();
 
 ### Agents SDK Integration
 ```typescript
-import { GuardrailAgent } from '@guardrails/guardrails-ts';
+import { GuardrailAgent } from '@openai/guardrails';
 import { Runner } from '@openai/agents';
 
 // Create agent with guardrails automatically configured
@@ -113,7 +113,7 @@ Datasets must be in JSONL format, with each line containing a JSON object:
 ### Programmatic Usage
 
 ```typescript
-import { GuardrailEval } from '@guardrails/guardrails-ts';
+import { GuardrailEval } from '@openai/guardrails';
 
 const eval = new GuardrailEval(
     'configs/my_guardrails.json',

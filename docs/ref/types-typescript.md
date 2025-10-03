@@ -1,6 +1,6 @@
 # Types: TypeScript
 
-Below are the core types used by the `@guardrails/guardrails-ts` library.
+Below are the core types used by the `@openai/guardrails` library.
 
 ## GuardrailLLMContext
 

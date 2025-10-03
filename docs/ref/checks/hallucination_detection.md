@@ -59,7 +59,7 @@ const config = {
 ### Use with Guardrails Client
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 const client = await GuardrailsOpenAI.create(config);
 const response = await client.responses.create({

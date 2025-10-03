@@ -1,5 +1,5 @@
 {
-    "name": "@guardrails/guardrails-ts",
+    "name": "@openai/guardrails",
     "version": "0.1.0",
     "description": "OpenAI Guardrails: A TypeScript framework for building safe and reliable AI systems",
     "main": "dist/index.js",
@@ -23,7 +23,7 @@
         "prepublishOnly": "npm run clean && npm run build",
         "cli": "node dist/cli.js",
         "eval": "node dist/cli.js eval",
-        "eval:example": "node dist/examples/run-eval.js",
+        "eval:example": "node dist/examples/run-eval.js"
     },
     "keywords": [
         "guardrails",

@@ -19,7 +19,7 @@ Our Guardrails can easily be integrated with OpenAI's Agents SDK using the **Gua
 The easiest way to integrate guardrails is using `GuardrailAgent` as a drop-in replacement:
 
 ```typescript
-import { GuardrailAgent } from '@guardrails/guardrails-ts';
+import { GuardrailAgent } from '@openai/guardrails';
 import { Runner } from '@openai/agents';
 
 // Create agent with guardrails automatically configured

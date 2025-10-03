@@ -5,7 +5,7 @@ Get started with Guardrails TypeScript in minutes. Guardrails provides drop-in r
 ## Install
 
 ```bash
-npm install @guardrails/guardrails-ts
+npm install @openai/guardrails
 ```
 
 ## Set API Key
@@ -56,7 +56,7 @@ Replace your OpenAI client with the Guardrails version (`GuardrailsOpenAI`):
 We support `chat.completions.create` and `responses.create`.
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 async function main() {
     // Use GuardrailsOpenAI instead of OpenAI
@@ -116,7 +116,7 @@ const client = await GuardrailsOpenAI.create(
 For OpenAI Agents SDK users, we provide `GuardrailAgent` as a drop-in replacement:
 
 ```typescript
-import { GuardrailAgent } from '@guardrails/guardrails-ts';
+import { GuardrailAgent } from '@openai/guardrails';
 import { Runner } from '@openai/agents';
 
 // Create agent with guardrails automatically configured
@@ -137,7 +137,7 @@ const result = await Runner.run(agent, "Hello, can you help me?");
 Use the Azure-specific client:
 
 ```typescript
-import { GuardrailsAzureOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsAzureOpenAI } from '@openai/guardrails';
 
 const client = await GuardrailsAzureOpenAI.create(
     './guardrails_config.json',
@@ -154,7 +154,7 @@ const client = await GuardrailsAzureOpenAI.create(
 Works with any OpenAI-compatible API:
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 // Local Ollama model
 const client = await GuardrailsOpenAI.create(
