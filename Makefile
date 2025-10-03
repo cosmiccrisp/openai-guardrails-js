@@ -2,6 +2,10 @@
 install:
 	npm install
 
+.PHONY: install-docs
+install-docs:
+	pip install -r requirements.txt
+
 .PHONY: format
 format: 
 	npm run format
@@ -20,8 +24,8 @@ build:
 
 .PHONY: build-docs
 build-docs:
-	npm run docs:build
+	mkdocs build
 
 .PHONY: serve-docs
 serve-docs:
-	npm run docs:serve
+	mkdocs serve
