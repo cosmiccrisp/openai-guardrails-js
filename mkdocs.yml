@@ -1,5 +1,6 @@
 site_name: OpenAI Guardrails TypeScript
-site_dir: .vercel/output/static
+site_url: https://openai.github.io/openai-guardrails-js/
+site_dir: site
 theme:
   name: material
   features:

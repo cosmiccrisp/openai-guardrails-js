@@ -22,10 +22,18 @@ test:
 build:
 	npm run build
 
+.PHONY: sync
+sync:
+	uv sync --all-extras --all-packages --group dev
+
 .PHONY: build-docs
 build-docs:
-	mkdocs build
+	uv run mkdocs build
 
 .PHONY: serve-docs
 serve-docs:
-	mkdocs serve
+	uv run mkdocs serve
+
+.PHONY: deploy-docs
+deploy-docs:
+	uv run mkdocs gh-deploy --force --verbose
