@@ -2,10 +2,6 @@
 install:
 	npm install
 
-.PHONY: install-docs
-install-docs:
-	pip install -r requirements.txt
-
 .PHONY: format
 format: 
 	npm run format
@@ -28,7 +24,7 @@ sync:
 
 .PHONY: build-docs
 build-docs:
-	uv run mkdocs build
+	uv run mkdocs build --site-dir site
 
 .PHONY: serve-docs
 serve-docs:

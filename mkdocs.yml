@@ -24,46 +24,32 @@ markdown_extensions:
 
 plugins:
   - search
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: ["src"]
-          selection:
-            docstring_style: google
-          options:
-            signature_crossrefs: true
-            members_order: source
-            separate_signature: true
-            show_signature_annotations: true
-            heading_level: 3
-            inherited_members: true
   - i18n:
-      docs_structure: folder
+      default_language: en
       languages:
-        - locale: en
-          default: true
+        en:
           name: English
           build: true
-          nav:
-            - Intro: index.md
-            - Examples: examples.md
-            - Documentation:
-              - Quickstart: quickstart.md
-              - "Streaming vs Blocking": streaming_output.md
-              - Tripwires: tripwires.md
-              - Checks:
-                  - Prompt Injection Detection: ref/checks/prompt_injection_detection.md
-                  - Contains PII: ref/checks/pii.md
-                  - Custom Prompt Check: ref/checks/custom_prompt_check.md
-                  - Hallucination Detection: ref/checks/hallucination_detection.md
-                  - Jailbreak Detection: ref/checks/jailbreak.md
-                  - Moderation: ref/checks/moderation.md
-                  - Off Topic Prompts: ref/checks/off_topic_prompts.md
-                  - URL Filter: ref/checks/urls.md
-              - Evaluation Tool: evals.md
-            - API Reference:
-              - Types: ref/types-typescript.md
-              - Exceptions: ref/exceptions-typescript.md
+nav:
+  - Intro: index.md
+  - Examples: examples.md
+  - Documentation:
+    - Quickstart: quickstart.md
+    - "Streaming vs Blocking": streaming_output.md
+    - Tripwires: tripwires.md
+    - Checks:
+        - Prompt Injection Detection: ref/checks/prompt_injection_detection.md
+        - Contains PII: ref/checks/pii.md
+        - Custom Prompt Check: ref/checks/custom_prompt_check.md
+        - Hallucination Detection: ref/checks/hallucination_detection.md
+        - Jailbreak Detection: ref/checks/jailbreak.md
+        - Moderation: ref/checks/moderation.md
+        - Off Topic Prompts: ref/checks/off_topic_prompts.md
+        - URL Filter: ref/checks/urls.md
+    - Evaluation Tool: evals.md
+  - API Reference:
+    - Types: ref/types-typescript.md
+    - Exceptions: ref/exceptions-typescript.md
 
 extra:
   generator: false
