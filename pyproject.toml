@@ -1,0 +1,19 @@
+[project]
+name = "openai-guardrails-js-docs"
+version = "0.1.0"
+description = "Documentation for OpenAI Guardrails JS"
+requires-python = ">=3.9"
+dependencies = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.14",
+    "pymdown-extensions>=10.0.0",
+    "mkdocs-i18n>=0.4.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.14",
+    "pymdown-extensions>=10.0.0",
+    "mkdocs-i18n>=0.4.3",
+]
