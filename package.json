@@ -39,12 +39,12 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/openai/guardrails-js.git"
+        "url": "https://github.com/openai/openai-guardrails-js.git"
     },
     "bugs": {
-        "url": "https://github.com/openai/guardrails-js/issues"
+        "url": "https://github.com/openai/openai-guardrails-js/issues"
     },
-    "homepage": "https://github.com/openai/guardrails-js#readme",
+    "homepage": "https://github.com/openai/openai-guardrails-js#readme",
     "dependencies": {
         "@openai/agents": "^0.1.3",
         "openai": "^4.0.0",

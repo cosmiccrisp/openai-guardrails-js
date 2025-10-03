@@ -14,8 +14,6 @@ npm run eval -- --config-path guardrails_config.json --dataset-path data.jsonl
 npm run eval -- --config-path guardrails_config.json --dataset-path data.jsonl --mode benchmark --models gpt-5 gpt-5-mini gpt-5-nano
 ```
 
-Test with included demo files in our [github repository](https://github.com/OpenAI-Early-Access/guardrails/tree/main/guardrails/src/guardrails/evals/eval_demo)
-
 ## Dependencies
 
 The evals tool is included with the TypeScript package. No additional dependencies are required.
@@ -41,7 +39,7 @@ The evals tool is included with the TypeScript package. No additional dependenci
 
 Export a configuration from the Guardrails Wizard UI and pass its path via `--config-path`.
 
-- Open the [Wizard UI](https://oaig-whisper-yonder-xnjpy2.vercel.app/guardrails)
+- Open the [Wizard UI](https://guardrails.openai.com/)
 - Configure the guardrails you want to evaluate
 - Use Export to download the config file (JSON)
 - Run the evaluator with `--config-path /path/to/exported_config.json`
@@ -162,4 +160,4 @@ npm run eval -- --config-path config.json --dataset-path data.jsonl --base-url h
 ## Next Steps
 
 - See the [API Reference](./ref/eval/guardrail_evals.md) for detailed documentation
-- Use [Wizard UI](https://oaig-whisper-yonder-xnjpy2.vercel.app/guardrails) for configuring guardrails without code
+- Use [Wizard UI](https://guardrails.openai.com/) for configuring guardrails without code

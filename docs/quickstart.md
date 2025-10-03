@@ -16,7 +16,7 @@ export OPENAI_API_KEY=sk-...
 
 ## Create Pipeline Configuration
 
-The fastest way is using the [Guardrails Wizard](https://guardrails-vercel-git-main-openai.vercel.app/guardrails) - a no-code tool for creating configurations.
+The fastest way is using the [Guardrails Wizard](https://guardrails.openai.com/) - a no-code tool for creating configurations.
 
 Or define manually:
 
@@ -60,15 +60,7 @@ import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
 
 async function main() {
     // Use GuardrailsOpenAI instead of OpenAI
-    const client = await GuardrailsOpenAI.create({
-        version: 1,
-        output: {
-            version: 1,
-            guardrails: [
-                {"name": "Moderation", "config": {"categories": ["hate", "violence"]}}
-            ]
-        }
-    });
+    const client = await GuardrailsOpenAI.create('./guardrails_config.json');
     
     try {
         const response = await client.responses.create({
@@ -128,15 +120,11 @@ import { GuardrailAgent } from '@guardrails/guardrails-ts';
 import { Runner } from '@openai/agents';
 
 // Create agent with guardrails automatically configured
-const agent = await GuardrailAgent.create({
-    version: 1,
-    output: {
-        version: 1,
-        guardrails: [
-            {"name": "Moderation", "config": {"categories": ["hate", "violence"]}}
-        ]
-    }
-}, "Customer support agent", "You are a customer support agent. You help customers with their questions.");
+const agent = await GuardrailAgent.create(
+    './guardrails_config.json',
+    "Customer support agent",
+    "You are a customer support agent. You help customers with their questions."
+);
 
 // Use exactly like a regular Agent
 const result = await Runner.run(agent, "Hello, can you help me?");
@@ -151,19 +139,14 @@ Use the Azure-specific client:
 ```typescript
 import { GuardrailsAzureOpenAI } from '@guardrails/guardrails-ts';
 
-const client = await GuardrailsAzureOpenAI.create({
-    version: 1,
-    output: {
-        version: 1,
-        guardrails: [
-            {"name": "Moderation", "config": {"categories": ["hate", "violence"]}}
-        ]
+const client = await GuardrailsAzureOpenAI.create(
+    './guardrails_config.json',
+    {
+        azure_endpoint: "https://your-resource.openai.azure.com/",
+        api_key: "your-azure-key",
+        api_version: "2025-01-01-preview"
     }
-}, {
-    azure_endpoint: "https://your-resource.openai.azure.com/",
-    api_key: "your-azure-key",
-    api_version: "2025-01-01-preview"
-});
+);
 ```
 
 ## Third-Party Models
@@ -174,13 +157,16 @@ Works with any OpenAI-compatible API:
 import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
 
 // Local Ollama model
-const client = await GuardrailsOpenAI.create(config, {
-    baseURL: "http://127.0.0.1:11434/v1/",
-    apiKey: "ollama"
-});
+const client = await GuardrailsOpenAI.create(
+    './guardrails_config.json',
+    {
+        baseURL: "http://127.0.0.1:11434/v1/",
+        apiKey: "ollama"
+    }
+);
 ```
 
 ## Next Steps
 
-- Explore TypeScript [examples](https://github.com/OpenAI-Early-Access/guardrails/tree/main/guardrails-ts/examples) for advanced patterns
+- Explore TypeScript [examples](https://github.com/openai/openai-guardrails-js/tree/main/examples) for advanced patterns
 - Learn about [streaming considerations](./streaming_output.md)

@@ -59,7 +59,7 @@ plugins:
             - Intro: index.md
             - Examples: examples.md
             - Documentation:
-              - Quickstart: typescript-quickstart.md
+              - Quickstart: quickstart.md
               - "Streaming vs Blocking": streaming_output.md
               - Tripwires: tripwires.md
               - Checks:

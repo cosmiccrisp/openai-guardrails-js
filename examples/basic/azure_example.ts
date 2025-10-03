@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 /**
- * Hello World: Minimal async customer support agent with guardrails using TypeScript Guardrails.
+ * Azure Hello World: Minimal Azure customer support agent with guardrails using TypeScript Guardrails.
  * 
- * This example provides a simple chatbot interface with guardrails using the drop-in client interface.
+ * This example provides a simple chatbot interface with guardrails using the Azure-specific guardrails client.
  * 
- * Run with: npx tsx hello_world.ts
+ * Run with: npx tsx azure_example.ts
  */
 
+import { config } from 'dotenv';
 import * as readline from 'readline';
 import {
-    GuardrailsOpenAI,
+    GuardrailsAzureOpenAI,
     GuardrailTripwireTriggered
-} from '../dist/index.js';
+} from '../../dist/index.js';
+
+// Load environment variables from .env file
+config();
 
 // Pipeline configuration with preflight PII masking and input guardrails
 const PIPELINE_CONFIG = {
@@ -23,31 +27,31 @@ const PIPELINE_CONFIG = {
                 name: "Contains PII", 
                 config: {
                     entities: ["US_SSN", "PHONE_NUMBER", "EMAIL_ADDRESS"],
-                    block: true  // Use masking mode (default) - masks PII without blocking
+                    block: true  // Use blocking mode - blocks PII instead of masking
                 }
             }
         ]
     },
-    input: {
-        version: 1,
-        guardrails: [
-            {
-                name: "Custom Prompt Check",
-                config: {
-                    model: "gpt-4.1-nano",
-                    confidence_threshold: 0.7,
-                    system_prompt_details: "Check if the text contains any math problems."
-                }
-            }
-        ]
-    },
+     input: {
+         version: 1,
+         guardrails: [
+             {
+                 name: "Custom Prompt Check",
+                 config: {
+                     model: process.env.AZURE_DEPLOYMENT!,
+                     confidence_threshold: 0.7,
+                     system_prompt_details: "Check if the text contains any math problems."
+                 }
+             }
+         ]
+     },
     output: {
       version: 1,
       guardrails: [
         {
           name: "URL Filter",
           config: {
-            url_allow_list: []
+            url_allow_list: ["microsoft.com", "azure.com"]
           }
         },
       ]
@@ -55,38 +59,37 @@ const PIPELINE_CONFIG = {
 };
 
 /**
- * Process user input using the new GuardrailsOpenAI.
+ * Process user input using the new GuardrailsAzureOpenAI.
  * 
- * @param guardrailsClient GuardrailsOpenAI client instance
+ * @param guardrailsClient GuardrailsAzureOpenAI client instance
  * @param userInput The user's input text
  * @param responseId Optional response ID for conversation tracking
  * @returns Promise resolving to a response ID
  */
 async function processInput(
-    guardrailsClient: GuardrailsOpenAI,
+    guardrailsClient: GuardrailsAzureOpenAI,
     userInput: string,
     responseId?: string
 ): Promise<string> {
     try {
-        // Use the new GuardrailsOpenAI - it handles all guardrail validation automatically
-        const response = await guardrailsClient.responses.create({
-            input: userInput,
-            model: "gpt-4.1-nano",
-            previous_response_id: responseId
+        // Use the new GuardrailsAzureOpenAI - it handles all guardrail validation automatically
+        const response = await guardrailsClient.chat.completions.create({
+            model: process.env.AZURE_DEPLOYMENT!,
+            messages: [{ role: "user", content: userInput }],
         });
 
         console.log(
-            `\nAssistant output: ${response.llm_response.output_text}`
+            `\nAssistant output: ${(response as any).llm_response.choices[0].message.content}`
         );
 
         // Show guardrail results if any were run
-        if (response.guardrail_results.allResults.length > 0) {
+        if ((response as any).guardrail_results.allResults.length > 0) {
             console.log(
-                `[dim]Guardrails checked: ${response.guardrail_results.allResults.length}[/dim]`
+                `[dim]Guardrails checked: ${(response as any).guardrail_results.allResults.length}[/dim]`
             );
         }
 
-        return response.llm_response.id;
+        return (response as any).llm_response.id;
 
     } catch (exc) {
         throw exc;
@@ -108,16 +111,37 @@ function createReadlineInterface(): readline.Interface {
  * Main async function that runs the chatbot loop.
  */
 async function main(): Promise<void> {
-    console.log('🤖 Hello World Chatbot with Guardrails\n');
-    console.log('This chatbot uses the new GuardrailsOpenAI client interface:');
-    console.log('• Automatically applies guardrails to all OpenAI API calls');
-    console.log('• Drop-in replacement for OpenAI client');
+    console.log('🤖 Azure Hello World Chatbot with Guardrails\n');
+    console.log('This chatbot uses the new GuardrailsAzureOpenAI client interface:');
+    console.log('• Automatically applies guardrails to all Azure OpenAI API calls');
+    console.log('• Drop-in replacement for Azure OpenAI client');
     console.log('• Input guardrails validate user messages');
     console.log('\nType your messages below. Press Ctrl+C to exit.\n');
     
-    // Initialize GuardrailsOpenAI with our pipeline configuration
-    const guardrailsClient = await GuardrailsOpenAI.create(PIPELINE_CONFIG, {
-        apiKey: process.env.OPENAI_API_KEY
+    // Check if required environment variables are set
+    const requiredVars = [
+        'AZURE_ENDPOINT',
+        'AZURE_API_KEY', 
+        'AZURE_API_VERSION',
+        'AZURE_DEPLOYMENT'
+    ];
+    
+    const missingVars = requiredVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+        console.log('❌ Missing required environment variables:');
+        missingVars.forEach(varName => console.log(`   • ${varName}`));
+        console.log('\nPlease set these in your .env file and try again.');
+        return;
+    }
+    
+    console.log('✅ All required environment variables are set\n');
+    
+    // Initialize GuardrailsAzureOpenAI with our pipeline configuration  
+    const guardrailsClient = await GuardrailsAzureOpenAI.create(PIPELINE_CONFIG, {
+        endpoint: process.env.AZURE_ENDPOINT!,
+        apiKey: process.env.AZURE_API_KEY!,
+        apiVersion: process.env.AZURE_API_VERSION!,
     });
     
     const rl = createReadlineInterface();

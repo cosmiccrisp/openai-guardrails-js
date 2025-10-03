@@ -80,7 +80,7 @@ console.log(response.llm_response.output_text);
 
 ### Complete Example
 
-See [`examples/`](https://github.com/openai/guardrails-js/tree/main/examples) for the full implementation.
+See [`examples/`](https://github.com/openai/openai-guardrails-js/tree/main/examples) for the full implementation.
 
 ### Notes
 

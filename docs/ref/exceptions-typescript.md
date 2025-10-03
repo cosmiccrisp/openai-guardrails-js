@@ -23,6 +23,6 @@ export class GuardrailExecutionError extends GuardrailError {
 - `GuardrailNotFoundError`: referenced guardrail name not registered.
 - `GuardrailExecutionError`: runtime failure within a guardrail (optional `cause`).
 
-For the full source, see [guardrails-ts/src/exceptions.ts](https://github.com/OpenAI-Early-Access/guardrails/blob/main/guardrails-ts/src/exceptions.ts) in the repository.
+For the full source, see [src/exceptions.ts](https://github.com/openai/openai-guardrails-js/blob/main/src/exceptions.ts) in the repository.
 
 

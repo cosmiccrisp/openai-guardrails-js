@@ -2,7 +2,7 @@
  * Example: Guardrail bundle using Ollama's Gemma3 model with GuardrailsClient.
  */
 
-import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../dist/index.js';
+import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../../dist/index.js';
 import * as readline from 'readline';
 import { ChatCompletionMessageParam } from 'openai';
 
