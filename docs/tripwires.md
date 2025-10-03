@@ -15,7 +15,7 @@ Tripwires raise exceptions by default:
 
 TypeScript
 ```typescript
-import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '@openai/guardrails';
 
 const client = await GuardrailsOpenAI.create({
   version: 1,

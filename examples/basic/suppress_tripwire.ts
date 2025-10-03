@@ -2,7 +2,7 @@
  * Example: Guardrail bundle with suppressed tripwire exception using GuardrailsClient.
  */
 
-import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../dist/index.js';
+import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../../dist/index.js';
 import * as readline from 'readline';
 
 // Define your pipeline configuration

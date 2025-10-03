@@ -9,7 +9,7 @@ Clone the repository and install locally:
 
 ```bash
 # Clone the repository
-git clone https://github.com/openai/guardrails-js.git
+git clone https://github.com/openai/openai-guardrails-js.git
 cd guardrails-js
 
 # Install dependencies
@@ -25,7 +25,7 @@ npm run build
 The easiest way to use Guardrails TypeScript is as a drop-in replacement for the OpenAI client:
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 async function main() {
     // Use GuardrailsOpenAI instead of OpenAI
@@ -60,7 +60,7 @@ main();
 
 ### Agents SDK Integration
 ```typescript
-import { GuardrailAgent } from '@guardrails/guardrails-ts';
+import { GuardrailAgent } from '@openai/guardrails';
 import { Runner } from '@openai/agents';
 
 // Create agent with guardrails automatically configured
@@ -113,7 +113,7 @@ Datasets must be in JSONL format, with each line containing a JSON object:
 ### Programmatic Usage
 
 ```typescript
-import { GuardrailEval } from '@guardrails/guardrails-ts';
+import { GuardrailEval } from '@openai/guardrails';
 
 const eval = new GuardrailEval(
     'configs/my_guardrails.json',
@@ -134,7 +134,7 @@ await eval.run('Evaluating my dataset');
 
 ## Examples
 
-The package includes comprehensive examples in the `examples/` directory:
+The package includes comprehensive examples in the [`examples/` directory](https://github.com/openai/openai-guardrails-js/tree/main/examples):
 
 - **`agents_sdk.ts`**: Agents SDK integration with GuardrailAgent
 - **`hello_world.ts`**: Basic chatbot with guardrails using GuardrailsOpenAI
@@ -160,30 +160,21 @@ npm run build
 
 **Using tsx (Recommended)**
 ```bash
-cd examples
-npx tsx agents_sdk.ts                    # Agents SDK integration
+cd examples/basic
 npx tsx hello_world.ts                   # Basic chatbot with guardrails
-npx tsx azure_example.ts                 # Azure OpenAI integration
-npx tsx local_model.ts                   # Local model usage
-npx tsx streaming.ts                     # Streaming responses
-npx tsx suppress_tripwire.ts             # Handling violations
 ```
 
 ## Available Guardrails
 
 The TypeScript implementation includes the following built-in guardrails:
 
-- **Keywords**: Filters content based on keyword matching
 - **Moderation**: Content moderation using OpenAI's moderation API
-- **URLs**: URL filtering and domain allowlist/blocklist
-- **PII**: Personally Identifiable Information detection
-- **NSFW**: Not Safe For Work content detection
+- **URL Filter**: URL filtering and domain allowlist/blocklist
+- **Contains PII**: Personally Identifiable Information detection
 - **Hallucination Detection**: Detects hallucinated content using vector stores
 - **Jailbreak**: Detects jailbreak attempts
-- **Competitors**: Detects mentions of competitor products
-- **Secret Keys**: Detects exposed API keys and secrets
-- **Topical Alignment**: Ensures responses stay within business scope
-- **User-Defined LLM**: Custom LLM-based guardrails
+- **Off Topic Prompts**: Ensures responses stay within business scope
+- **Custom Prompt Check**: Custom LLM-based guardrails
 
 ## License
 
@@ -191,6 +182,6 @@ MIT License - see LICENSE file for details.
 
 ## Disclaimers
 
-Please note that Guardrails may use Third-Party Services such as the [Presidio open-source framework](https://github.com/microsoft/presidio), which are subject to their own terms and conditions and are not developed or verified by OpenAI.
+Please note that Guardrails may use Third-Party Services such as the [Presidio open-source framework](https://github.com/microsoft/presidio), which are subject to their own terms and conditions and are not developed or verified by OpenAI.  For more information on configuring guardrails, please visit: [platform.openai.com/guardrails](https://platform.openai.com/guardrails)
 
 Developers are responsible for implementing appropriate safeguards to prevent storage or misuse of sensitive or prohibited content (including but not limited to personal data, child sexual abuse material, or other illegal content). OpenAI disclaims liability for any logging or retention of such content by developers. Developers must ensure their systems comply with all applicable data protection and content safety laws, and should avoid persisting any blocked content generated or intercepted by Guardrails.

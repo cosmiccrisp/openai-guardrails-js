@@ -2,7 +2,7 @@
 
 Guardrails supports two approaches for handling LLM output: non-streaming (safe, default) and streaming (fast). The choice balances safety vs. speed.
 
-## Non-Streaming: Safe and Reliable (Default)
+## Non-Streaming (blocking): Safe and Reliable (Default)
 
 ![Safe Pipeline](assets/images/slow_pipeline.png)
 
@@ -42,10 +42,3 @@ const response = await client.responses.create({
   stream: true  // Fast but some risk
 });
 ```
-
-## Implementation Examples
-
-See complete examples:
-
-- [Non-streaming (safe)](https://github.com/OpenAI-Early-Access/guardrails-js/tree/main/examples)
-- [Streaming (fast)](https://github.com/OpenAI-Early-Access/guardrails-js/tree/main/examples)

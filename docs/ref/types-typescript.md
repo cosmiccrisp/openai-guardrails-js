@@ -1,6 +1,6 @@
 # Types: TypeScript
 
-Below are the core types used by the `@guardrails/guardrails-ts` library.
+Below are the core types used by the `@openai/guardrails` library.
 
 ## GuardrailLLMContext
 
@@ -58,6 +58,6 @@ export type TIn = unknown;
 export type TCfg = object;
 ```
 
-For the full source, see [guardrails-ts/src/types.ts](https://github.com/OpenAI-Early-Access/guardrails/blob/main/guardrails-ts/src/types.ts) in the repository.
+For the full source, see [src/types.ts](https://github.com/openai/openai-guardrails-js/blob/main/src/types.ts) in the repository.
 
 

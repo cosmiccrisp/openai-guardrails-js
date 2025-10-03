@@ -26,7 +26,7 @@
  */
 
 import * as readline from 'readline';
-import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../dist/index.js';
+import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../../dist/index.js';
 
 // Tool implementations (mocked)
 function get_horoscope(sign: string): { horoscope: string } {

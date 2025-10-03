@@ -4,7 +4,7 @@
  */
 
 import { clear } from 'console';
-import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../dist/index.js';
+import { GuardrailsOpenAI, GuardrailTripwireTriggered } from '../../dist/index.js';
 import * as readline from 'readline';
 
 // Define your pipeline configuration

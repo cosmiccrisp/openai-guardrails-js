@@ -10,7 +10,7 @@
  */
 
 import * as readline from 'readline';
-import { GuardrailAgent } from '../dist/index.js';
+import { GuardrailAgent } from '../../dist/index.js';
 import { 
     InputGuardrailTripwireTriggered, 
     OutputGuardrailTripwireTriggered 

@@ -59,7 +59,7 @@ const config = {
 ### Use with Guardrails Client
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 const client = await GuardrailsOpenAI.create(config);
 const response = await client.responses.create({
@@ -80,7 +80,7 @@ console.log(response.llm_response.output_text);
 
 ### Complete Example
 
-See [`examples/`](https://github.com/openai/guardrails-js/tree/main/examples) for the full implementation.
+See [`examples/`](https://github.com/openai/openai-guardrails-js/tree/main/examples) for the full implementation.
 
 ### Notes
 

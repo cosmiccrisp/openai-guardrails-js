@@ -10,7 +10,7 @@ Basic interactive chatbot demonstrating drop-in replacement for OpenAI client wi
 #### 2. `azure_example.ts`
 Azure OpenAI integration with guardrails using the Azure-specific client.
 
-**Setup:**
+**Azure Setup:**
 1. Create an `.env` file in the examples directory.
 2. Fill in your Azure OpenAI credentials:
    - `AZURE_ENDPOINT`
@@ -22,7 +22,7 @@ Azure OpenAI integration with guardrails using the Azure-specific client.
 #### 3. `local_model.ts`
 Local model integration using Ollama with guardrails validation.
 
-**Setup:**
+**Ollama Setup:**
 1. Install and run Ollama:
 ```bash
 ollama serve

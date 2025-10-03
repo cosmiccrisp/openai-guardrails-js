@@ -1,6 +1,6 @@
 # Guardrails
 
-**Guardrails** is a safety framework for LLM applications that automatically validates inputs and outputs using configurable checks. Use the [Guardrails Wizard](https://guardrails-vercel-git-main-openai.vercel.app/guardrails) to create configurations, then drop in our client classes for automatic validation.
+**Guardrails** is a safety framework for LLM applications that automatically validates inputs and outputs using configurable checks. Use the [Guardrails Wizard](https://platform.openai.com/guardrails) to create configurations, then drop in our client classes for automatic validation.
 
 ![Guardrails Wizard](assets/images/guardrails_wizard_screenshot.png)
 
@@ -27,7 +27,7 @@
 ## Quickstart
 
 ```typescript
-import { GuardrailsOpenAI } from '@guardrails/guardrails-ts';
+import { GuardrailsOpenAI } from '@openai/guardrails';
 
 async function main() {
   const client = await GuardrailsOpenAI.create({
@@ -53,9 +53,9 @@ main();
 
 ## Next Steps
 
-- [Quickstart: TypeScript](./typescript-quickstart.md)
+- [Quickstart](./quickstart.md)
 - [Examples](./examples.md) - See real implementations
-- [Guardrails Wizard](https://guardrails-vercel-git-main-openai.vercel.app/guardrails) - Create configurations visually
+- [Guardrails Wizard](https://platform.openai.com/guardrails) - Create configurations visually
 
 ## Disclaimers
 
