@@ -1,19 +1,19 @@
 /**
  * Hallucination Detection guardrail module.
- * 
+ *
  * This module provides a guardrail for detecting when an LLM generates content that
  * may be factually incorrect, unsupported, or "hallucinated." It uses the OpenAI
  * Responses API with file search to validate claims against actual documents.
- * 
+ *
  * **IMPORTANT: A valid OpenAI vector store must be created before using this guardrail.**
- * 
+ *
  * To create an OpenAI vector store, you can:
  * 
  * 1. **Use the Guardrails Wizard**: Configure the guardrail through the [Guardrails Wizard](https://guardrails.openai.com/), which provides an option to create a vector store if you don't already have one.
  * 2. **Use the OpenAI Dashboard**: Create a vector store directly in the [OpenAI Dashboard](https://platform.openai.com/storage/vector_stores/).
  * 3. **Follow OpenAI Documentation**: Refer to the "Create a vector store and upload a file" section of the [File Search documentation](https://platform.openai.com/docs/guides/tools-file-search) for detailed instructions.
  * 4. **Use the provided utility script**: Use the `create_vector_store.py` script provided in the [repo](https://github.com/OpenAI-Early-Access/guardrails/blob/main/guardrails/src/guardrails/utils/create_vector_store.py) to create a vector store from local files or directories.
- * 
+ *
  * **Pricing**: For pricing details on file search and vector storage, see the [Built-in tools section](https://openai.com/api/pricing/) of the OpenAI pricing page.
  */
 
@@ -23,16 +23,18 @@ import { defaultSpecRegistry } from '../registry';
 
 /**
  * Configuration schema for hallucination detection.
- * 
+ *
  * Extends the base LLM configuration with file search validation parameters.
  */
 export const HallucinationDetectionConfig = z.object({
-    /** The LLM model to use for analysis (e.g., "gpt-4o-mini") */
-    model: z.string(),
-    /** Minimum confidence score (0.0 to 1.0) required to trigger the guardrail. Defaults to 0.7. */
-    confidence_threshold: z.number().min(0.0).max(1.0).default(0.7),
-    /** Vector store ID to use for document validation (must start with 'vs_') */
-    knowledge_source: z.string().regex(/^vs_/, "knowledge_source must be a valid vector store ID starting with 'vs_'"),
+  /** The LLM model to use for analysis (e.g., "gpt-4o-mini") */
+  model: z.string(),
+  /** Minimum confidence score (0.0 to 1.0) required to trigger the guardrail. Defaults to 0.7. */
+  confidence_threshold: z.number().min(0.0).max(1.0).default(0.7),
+  /** Vector store ID to use for document validation (must start with 'vs_') */
+  knowledge_source: z
+    .string()
+    .regex(/^vs_/, "knowledge_source must be a valid vector store ID starting with 'vs_'"),
 });
 
 export type HallucinationDetectionConfig = z.infer<typeof HallucinationDetectionConfig>;
@@ -46,18 +48,18 @@ export type HallucinationDetectionContext = GuardrailLLMContext;
  * Output schema for hallucination detection analysis.
  */
 export const HallucinationDetectionOutput = z.object({
-    /** Whether the content was flagged as potentially hallucinated */
-    flagged: z.boolean(),
-    /** Confidence score (0.0 to 1.0) that the input is hallucinated */
-    confidence: z.number().min(0.0).max(1.0),
-    /** Detailed explanation of the analysis */
-    reasoning: z.string(),
-    /** Type of hallucination detected */
-    hallucination_type: z.string().nullable(),
-    /** Specific statements flagged as potentially hallucinated */
-    hallucinated_statements: z.array(z.string()).nullable(),
-    /** Specific statements that are supported by the documents */
-    verified_statements: z.array(z.string()).nullable(),
+  /** Whether the content was flagged as potentially hallucinated */
+  flagged: z.boolean(),
+  /** Confidence score (0.0 to 1.0) that the input is hallucinated */
+  confidence: z.number().min(0.0).max(1.0),
+  /** Detailed explanation of the analysis */
+  reasoning: z.string(),
+  /** Type of hallucination detected */
+  hallucination_type: z.string().nullable(),
+  /** Specific statements flagged as potentially hallucinated */
+  hallucinated_statements: z.array(z.string()).nullable(),
+  /** Specific statements that are supported by the documents */
+  verified_statements: z.array(z.string()).nullable(),
 });
 
 export type HallucinationDetectionOutput = z.infer<typeof HallucinationDetectionOutput>;
@@ -136,128 +138,129 @@ Respond with a JSON object containing:
 
 /**
  * Detect potential hallucinations in text by validating against documents.
- * 
+ *
  * This function uses the OpenAI Responses API with file search and structured output
  * to validate factual claims in the candidate text against the provided knowledge source.
  * It flags content that contains any unsupported or contradicted factual claims.
- * 
+ *
  * @param ctx Guardrail context containing the LLM client.
  * @param candidate Text to analyze for potential hallucinations.
  * @param config Configuration for hallucination detection.
  * @returns GuardrailResult containing hallucination analysis with flagged status
  *         and confidence score.
  */
-export const hallucination_detection: CheckFn<HallucinationDetectionContext, string, HallucinationDetectionConfig> = async (
-    ctx,
-    candidate,
-    config
-): Promise<GuardrailResult> => {
-    if (!config.knowledge_source || !config.knowledge_source.startsWith("vs_")) {
-        throw new Error("knowledge_source must be a valid vector store ID starting with 'vs_'");
+export const hallucination_detection: CheckFn<
+  HallucinationDetectionContext,
+  string,
+  HallucinationDetectionConfig
+> = async (ctx, candidate, config): Promise<GuardrailResult> => {
+  if (!config.knowledge_source || !config.knowledge_source.startsWith('vs_')) {
+    throw new Error("knowledge_source must be a valid vector store ID starting with 'vs_'");
+  }
+
+  try {
+    // Create the validation query
+    const validationQuery = `${VALIDATION_PROMPT}\n\nText to validate:\n${candidate}`;
+
+    // Use the Responses API with file search
+    const response = await ctx.guardrailLlm.responses.create({
+      model: config.model,
+      input: validationQuery,
+      tools: [
+        {
+          type: 'file_search',
+          vector_store_ids: [config.knowledge_source],
+        },
+      ],
+    });
+
+    // Extract the analysis from the response
+    // The response will contain the LLM's analysis in output_text
+    const outputText = response.output_text;
+    if (!outputText) {
+      throw new Error('No analysis result from LLM');
     }
 
+    // Try to extract JSON from the response (it might be wrapped in other text)
+    let jsonText = outputText.trim();
+
+    // Look for JSON object in the response
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[0];
+    }
+
+    // Parse the JSON response
+    let parsedJson;
     try {
-        // Create the validation query
-        const validationQuery = `${VALIDATION_PROMPT}\n\nText to validate:\n${candidate}`;
-
-        // Use the Responses API with file search
-        const response = await ctx.guardrailLlm.responses.create({
-            model: config.model,
-            input: validationQuery,
-            tools: [{
-                type: "file_search",
-                vector_store_ids: [config.knowledge_source]
-            }]
-        });
-
-        // Extract the analysis from the response
-        // The response will contain the LLM's analysis in output_text
-        const outputText = response.output_text;
-        if (!outputText) {
-            throw new Error("No analysis result from LLM");
-        }
-
-        // Try to extract JSON from the response (it might be wrapped in other text)
-        let jsonText = outputText.trim();
-
-        // Look for JSON object in the response
-        const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            jsonText = jsonMatch[0];
-        }
-
-        // Parse the JSON response
-        let parsedJson;
-        try {
-            parsedJson = JSON.parse(jsonText);
-        } catch (error) {
-            console.warn("Failed to parse LLM response as JSON:", jsonText);
-            // Return a safe default if JSON parsing fails
-            return {
-                tripwireTriggered: false,
-                info: {
-                    guardrail_name: "Hallucination Detection",
-                    flagged: false,
-                    confidence: 0.0,
-                    reasoning: "LLM response could not be parsed as JSON",
-                    hallucination_type: null,
-                    hallucinated_statements: null,
-                    verified_statements: null,
-                    threshold: config.confidence_threshold,
-                    error: `JSON parsing failed: ${error instanceof Error ? error.message : String(error)}`,
-                    checked_text: candidate,
-                },
-            };
-        }
-
-        const analysis = HallucinationDetectionOutput.parse(parsedJson);
-
-        // Determine if tripwire should be triggered
-        const isTrigger = analysis.flagged && analysis.confidence >= config.confidence_threshold;
-
-        return {
-            tripwireTriggered: isTrigger,
-            info: {
-                guardrail_name: "Hallucination Detection",
-                flagged: analysis.flagged,
-                confidence: analysis.confidence,
-                reasoning: analysis.reasoning,
-                hallucination_type: analysis.hallucination_type,
-                hallucinated_statements: analysis.hallucinated_statements,
-                verified_statements: analysis.verified_statements,
-                threshold: config.confidence_threshold,
-                checked_text: candidate,  // Hallucination Detection doesn't modify text, pass through unchanged
-            },
-        };
-
+      parsedJson = JSON.parse(jsonText);
     } catch (error) {
-        // Log unexpected errors and return safe default
-        console.error("Unexpected error in hallucination_detection:", error);
-        return {
-            tripwireTriggered: false,
-            info: {
-                guardrail_name: "Hallucination Detection",
-                flagged: false,
-                confidence: 0.0,
-                reasoning: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
-                hallucination_type: null,
-                hallucinated_statements: null,
-                verified_statements: null,
-                threshold: config.confidence_threshold,
-                error: error instanceof Error ? error.message : String(error),
-                checked_text: candidate,  // Hallucination Detection doesn't modify text, pass through unchanged
-            },
-        };
+      console.warn('Failed to parse LLM response as JSON:', jsonText);
+      // Return a safe default if JSON parsing fails
+      return {
+        tripwireTriggered: false,
+        info: {
+          guardrail_name: 'Hallucination Detection',
+          flagged: false,
+          confidence: 0.0,
+          reasoning: 'LLM response could not be parsed as JSON',
+          hallucination_type: null,
+          hallucinated_statements: null,
+          verified_statements: null,
+          threshold: config.confidence_threshold,
+          error: `JSON parsing failed: ${error instanceof Error ? error.message : String(error)}`,
+          checked_text: candidate,
+        },
+      };
     }
+
+    const analysis = HallucinationDetectionOutput.parse(parsedJson);
+
+    // Determine if tripwire should be triggered
+    const isTrigger = analysis.flagged && analysis.confidence >= config.confidence_threshold;
+
+    return {
+      tripwireTriggered: isTrigger,
+      info: {
+        guardrail_name: 'Hallucination Detection',
+        flagged: analysis.flagged,
+        confidence: analysis.confidence,
+        reasoning: analysis.reasoning,
+        hallucination_type: analysis.hallucination_type,
+        hallucinated_statements: analysis.hallucinated_statements,
+        verified_statements: analysis.verified_statements,
+        threshold: config.confidence_threshold,
+        checked_text: candidate, // Hallucination Detection doesn't modify text, pass through unchanged
+      },
+    };
+  } catch (error) {
+    // Log unexpected errors and return safe default
+    console.error('Unexpected error in hallucination_detection:', error);
+    return {
+      tripwireTriggered: false,
+      info: {
+        guardrail_name: 'Hallucination Detection',
+        flagged: false,
+        confidence: 0.0,
+        reasoning: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+        hallucination_type: null,
+        hallucinated_statements: null,
+        verified_statements: null,
+        threshold: config.confidence_threshold,
+        error: error instanceof Error ? error.message : String(error),
+        checked_text: candidate, // Hallucination Detection doesn't modify text, pass through unchanged
+      },
+    };
+  }
 };
 
 // Register the guardrail
 defaultSpecRegistry.register(
-    "Hallucination Detection",
-    hallucination_detection,
-    "Detects potential hallucinations in AI-generated text using OpenAI Responses API with file search. Validates claims against actual documents and flags factually incorrect, unsupported, or potentially fabricated information.",
-    "text/plain",
-    HallucinationDetectionConfig as z.ZodType<HallucinationDetectionConfig>,
-    undefined,
-    { engine: "FileSearch" }
+  'Hallucination Detection',
+  hallucination_detection,
+  'Detects potential hallucinations in AI-generated text using OpenAI Responses API with file search. Validates claims against actual documents and flags factually incorrect, unsupported, or potentially fabricated information.',
+  'text/plain',
+  HallucinationDetectionConfig as z.ZodType<HallucinationDetectionConfig>,
+  undefined,
+  { engine: 'FileSearch' }
 );

@@ -1,27 +1,27 @@
 /**
  * NSFW content detection guardrail module.
- * 
+ *
  * This module provides a guardrail for detecting Not Safe For Work (NSFW) content in text,
  * including explicit sexual content, adult themes, profanity, and inappropriate material. It uses an
  * LLM to analyze text for various categories of NSFW content.
- * 
+ *
  * Performance Metrics:
  *     For detailed performance benchmarks and evaluation results, see our
  *     [benchmarking page](/benchmarking/nsfw/).
- * 
+ *
  * Constants:
  *     SYSTEM_PROMPT: Detailed LLM prompt guiding NSFW detection and classification.
- * 
+ *
  * Attributes:
  *     nsfw_content: Registered guardrail check_fn for NSFW text content detection.
- * 
+ *
  * Configuration Parameters:
  *     This guardrail uses the base LLM configuration (see LLMConfig) with these parameters:
- * 
+ *
  *     - `model` (str): The name of the LLM model to use (e.g., "gpt-4", "gpt-3.5-turbo")
  *     - `confidence_threshold` (float): Minimum confidence score (0.0 to 1.0) required to
  *         trigger the guardrail. Defaults to 0.7.
- * 
+ *
  * Examples:
  * ```typescript
  *     const config = {
@@ -66,18 +66,16 @@ Focus on detecting ALL types of NSFW content, including:
 Flag any content that matches these criteria.
 `.trim();
 
-
-
 /**
  * NSFW content detection guardrail using LLM.
- * 
+ *
  * Detects NSFW (Not Safe For Work) content in text, including sexual content,
  * hate speech, violence, profanity, illegal activities, and other inappropriate material.
  */
 export const nsfw_content: CheckFn<NsfwContext, string, LLMConfig> = createLLMCheckFn(
-    "NSFW Text",
-    "Detects NSFW (Not Safe For Work) content in text, including sexual content, hate speech, violence, profanity, illegal activities, and other inappropriate material.",
-    SYSTEM_PROMPT,
-    LLMOutput,
-    LLMConfig
-); 
+  'NSFW Text',
+  'Detects NSFW (Not Safe For Work) content in text, including sexual content, hate speech, violence, profanity, illegal activities, and other inappropriate material.',
+  SYSTEM_PROMPT,
+  LLMOutput,
+  LLMConfig
+);

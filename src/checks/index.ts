@@ -1,6 +1,6 @@
 /**
  * Built-in guardrail check functions.
- * 
+ *
  * This module provides a collection of pre-built guardrail checks for common
  * validation scenarios like content moderation, PII detection, and more.
  */
@@ -20,4 +20,4 @@ export * from './jailbreak';
 export * from './secret-keys';
 export * from './topical-alignment';
 export * from './user-defined-llm';
-export * from './prompt_injection_detection'; 
+export * from './prompt_injection_detection';
