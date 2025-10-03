@@ -39,7 +39,7 @@ The evals tool is included with the TypeScript package. No additional dependenci
 
 Export a configuration from the Guardrails Wizard UI and pass its path via `--config-path`.
 
-- Open the [Wizard UI](https://platform.openai.com/guardrails)
+- Open the [Wizard UI](https://guardrails.openai.com/)
 - Configure the guardrails you want to evaluate
 - Use Export to download the config file (JSON)
 - Run the evaluator with `--config-path /path/to/exported_config.json`
@@ -160,4 +160,4 @@ npm run eval -- --config-path config.json --dataset-path data.jsonl --base-url h
 ## Next Steps
 
 - See the [API Reference](./ref/eval/guardrail_evals.md) for detailed documentation
-- Use [Wizard UI](https://platform.openai.com/guardrails) for configuring guardrails without code
+- Use [Wizard UI](https://guardrails.openai.com/) for configuring guardrails without code
