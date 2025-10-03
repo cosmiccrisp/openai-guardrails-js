@@ -1,6 +1,6 @@
 /**
  * Core evaluation components.
- * 
+ *
  * This module exports the core evaluation framework components including
  * types, engines, calculators, and utilities.
  */

@@ -1,6 +1,6 @@
 /**
  * Jailbreak detection guardrail module.
- * 
+ *
  * This module provides a guardrail for detecting attempts to bypass AI safety measures
  * or manipulate the model's behavior. It uses an LLM to analyze text for various
  * jailbreak techniques including prompt injection, role-playing requests, and social
@@ -54,15 +54,15 @@ Examples of *non-jailbreak* content:
 
 /**
  * Jailbreak detection guardrail.
- * 
+ *
  * Detects attempts to jailbreak or bypass AI safety measures using
  * techniques such as prompt injection, role-playing requests, system
  * prompt overrides, or social engineering.
  */
 export const jailbreak: CheckFn<JailbreakContext, string, JailbreakConfig> = createLLMCheckFn(
-    "Jailbreak",
-    "Detects attempts to jailbreak or bypass AI safety measures",
-    SYSTEM_PROMPT,
-    JailbreakOutput,
-    JailbreakConfig
+  'Jailbreak',
+  'Detects attempts to jailbreak or bypass AI safety measures',
+  SYSTEM_PROMPT,
+  JailbreakOutput,
+  JailbreakConfig
 );

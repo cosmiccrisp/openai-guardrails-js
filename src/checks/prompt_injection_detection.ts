@@ -1,18 +1,18 @@
 /**
- * Prompt Injection Detection guardrail for detecting when function calls, outputs, or assistant responses 
+ * Prompt Injection Detection guardrail for detecting when function calls, outputs, or assistant responses
  * are not aligned with the user's intent.
- * 
+ *
  * This module provides a focused guardrail for detecting when LLM actions (tool calls,
- * tool call outputs) are not aligned with the user's goal. It parses conversation 
+ * tool call outputs) are not aligned with the user's goal. It parses conversation
  * history directly from OpenAI API calls, eliminating the need for external conversation tracking.
- * 
+ *
  * The prompt injection detection check runs as both a preflight and output guardrail, checking only
  * tool_calls and tool_call_outputs, not user messages or assistant generated text.
- * 
+ *
  * Configuration Parameters:
  * - `model` (str): The LLM model to use for prompt injection detection analysis
  * - `confidence_threshold` (float): Minimum confidence score to trigger guardrail
- * 
+ *
  * Example:
  * ```typescript
  * const config = {
@@ -25,13 +25,18 @@
  */
 
 import { z } from 'zod';
-import { CheckFn, GuardrailResult, GuardrailLLMContext, GuardrailLLMContextWithHistory } from '../types';
+import {
+  CheckFn,
+  GuardrailResult,
+  GuardrailLLMContext,
+  GuardrailLLMContextWithHistory,
+} from '../types';
 import { defaultSpecRegistry } from '../registry';
 import { LLMConfig, LLMOutput, runLLM } from './llm-base';
 
 /**
  * Configuration schema for the prompt injection detection guardrail.
- * 
+ *
  * Extends the base LLM configuration with prompt injection detection-specific parameters.
  */
 export const PromptInjectionDetectionConfig = z.object({
@@ -46,24 +51,24 @@ export type PromptInjectionDetectionConfig = z.infer<typeof PromptInjectionDetec
 // Schema for registry registration (ensures all fields are provided)
 export const PromptInjectionDetectionConfigRequired = z.object({
   model: z.string(),
-  confidence_threshold: z.number().min(0.0).max(1.0)
+  confidence_threshold: z.number().min(0.0).max(1.0),
 });
 
 /**
  * Context requirements for the prompt injection detection guardrail.
- * 
+ *
  * Uses the extended context interface with conversation history methods.
  */
 export type PromptInjectionDetectionContext = GuardrailLLMContextWithHistory;
 
 /**
  * Output schema for prompt injection detection analysis.
- * 
+ *
  * Extends the base LLM output with prompt injection detection-specific details.
  */
 export const PromptInjectionDetectionOutput = LLMOutput.extend({
   /** What the LLM action is doing */
-  observation: z.string().describe("What the LLM action is doing"),
+  observation: z.string().describe('What the LLM action is doing'),
 });
 
 export type PromptInjectionDetectionOutput = z.infer<typeof PromptInjectionDetectionOutput>;
@@ -123,26 +128,30 @@ interface ParsedConversation {
 
 /**
  * Prompt injection detection check for function calls, outputs, and responses.
- * 
- * This function parses conversation history from the context to determine if the most recent LLM 
- * action aligns with the user's goal. Works with both chat.completions 
+ *
+ * This function parses conversation history from the context to determine if the most recent LLM
+ * action aligns with the user's goal. Works with both chat.completions
  * and responses API formats.
- * 
+ *
  * @param ctx Guardrail context containing the LLM client and conversation history methods.
  * @param data Fallback conversation data if context doesn't have conversation_data.
  * @param config Configuration for prompt injection detection checking.
  * @returns GuardrailResult containing prompt injection detection analysis with flagged status and confidence.
  */
-export const promptInjectionDetectionCheck: CheckFn<PromptInjectionDetectionContext, string, PromptInjectionDetectionConfig> = async (
-  ctx,
-  data,
-  config
-): Promise<GuardrailResult> => {
+export const promptInjectionDetectionCheck: CheckFn<
+  PromptInjectionDetectionContext,
+  string,
+  PromptInjectionDetectionConfig
+> = async (ctx, data, config): Promise<GuardrailResult> => {
   try {
     // Get conversation history and incremental checking state
     const conversationHistory = ctx.getConversationHistory();
     if (!conversationHistory || conversationHistory.length === 0) {
-      return createSkipResult("No conversation history available", config.confidence_threshold, data);
+      return createSkipResult(
+        'No conversation history available',
+        config.confidence_threshold,
+        data
+      );
     }
 
     // Get incremental prompt injection detection checking state
@@ -162,10 +171,10 @@ export const promptInjectionDetectionCheck: CheckFn<PromptInjectionDetectionCont
 
     if (!new_llm_actions || new_llm_actions.length === 0 || !user_intent.most_recent_message) {
       return createSkipResult(
-        "No function calls or function call outputs to evaluate",
+        'No function calls or function call outputs to evaluate',
         config.confidence_threshold,
         data,
-        user_intent.most_recent_message || "N/A",
+        user_intent.most_recent_message || 'N/A',
         new_llm_actions
       );
     }
@@ -173,7 +182,7 @@ export const promptInjectionDetectionCheck: CheckFn<PromptInjectionDetectionCont
     // Format user context for analysis
     let userGoalText: string;
     if (user_intent.previous_context.length > 0) {
-      const contextText = user_intent.previous_context.map(msg => `- ${msg}`).join('\n');
+      const contextText = user_intent.previous_context.map((msg) => `- ${msg}`).join('\n');
       userGoalText = `Most recent request: ${user_intent.most_recent_message}
 
 Previous context:
@@ -186,7 +195,7 @@ ${contextText}`;
     if (new_llm_actions.length === 1 && new_llm_actions[0]?.role === 'user') {
       ctx.updateInjectionLastCheckedIndex(conversationHistory.length);
       return createSkipResult(
-        "Skipping check: only new action is a user message",
+        'Skipping check: only new action is a user message',
         config.confidence_threshold,
         data,
         userGoalText,
@@ -212,17 +221,16 @@ ${contextText}`;
     return {
       tripwireTriggered: isMisaligned,
       info: {
-        guardrail_name: "Prompt Injection Detection",
+        guardrail_name: 'Prompt Injection Detection',
         observation: analysis.observation,
         flagged: analysis.flagged,
         confidence: analysis.confidence,
         threshold: config.confidence_threshold,
         user_goal: userGoalText,
         action: new_llm_actions,
-        checked_text: JSON.stringify(conversationHistory)
-      }
+        checked_text: JSON.stringify(conversationHistory),
+      },
     };
-
   } catch (error) {
     return createSkipResult(
       `Error during prompt injection detection check: ${error instanceof Error ? error.message : String(error)}`,
@@ -234,7 +242,7 @@ ${contextText}`;
 
 /**
  * Parse conversation data incrementally, only analyzing new LLM actions.
- * 
+ *
  * @param conversationHistory Full conversation history
  * @param lastCheckedIndex Index of the last message we checked
  * @returns Parsed conversation data with user intent and new LLM actions
@@ -264,7 +272,7 @@ function parseConversationHistory(
 
 /**
  * Check if an action is a function call or function output that should be analyzed.
- * 
+ *
  * @param action Action object to check
  * @returns True if action should be analyzed for alignment
  */
@@ -291,7 +299,7 @@ function isFunctionCallOrOutput(action: any): boolean {
 
 /**
  * Extract text content from various message content formats.
- * 
+ *
  * @param content Message content (string, array, or other)
  * @returns Extracted text string
  */
@@ -302,8 +310,8 @@ function extractContentText(content: any): string {
   if (Array.isArray(content)) {
     // For responses API format with content parts
     return content
-      .filter(part => part?.type === "input_text" && typeof part.text === 'string')
-      .map(part => part.text)
+      .filter((part) => part?.type === 'input_text' && typeof part.text === 'string')
+      .map((part) => part.text)
       .join(' ');
   }
   return String(content || '');
@@ -311,7 +319,7 @@ function extractContentText(content: any): string {
 
 /**
  * Extract user intent with full context from a list of messages.
- * 
+ *
  * @param messages List of conversation messages
  * @returns User intent dictionary with most recent message and previous context
  */
@@ -320,24 +328,24 @@ function extractUserIntentFromMessages(messages: any[]): UserIntentDict {
 
   // Extract all user messages in chronological order
   for (const msg of messages) {
-    if (msg?.role === "user") {
+    if (msg?.role === 'user') {
       userMessages.push(extractContentText(msg.content));
     }
   }
 
   if (userMessages.length === 0) {
-    return { most_recent_message: "", previous_context: [] };
+    return { most_recent_message: '', previous_context: [] };
   }
 
   return {
     most_recent_message: userMessages[userMessages.length - 1],
-    previous_context: userMessages.slice(0, -1)
+    previous_context: userMessages.slice(0, -1),
   };
 }
 
 /**
  * Create result for skipped alignment checks (errors, no data, etc.).
- * 
+ *
  * @param observation Description of why the check was skipped
  * @param threshold Confidence threshold
  * @param data Original data
@@ -349,13 +357,13 @@ function createSkipResult(
   observation: string,
   threshold: number,
   data: string,
-  userGoal: string = "N/A",
+  userGoal: string = 'N/A',
   action: any = null
 ): GuardrailResult {
   return {
     tripwireTriggered: false,
     info: {
-      guardrail_name: "Prompt Injection Detection",
+      guardrail_name: 'Prompt Injection Detection',
       observation,
       flagged: false,
       confidence: 0.0,
@@ -363,13 +371,13 @@ function createSkipResult(
       user_goal: userGoal,
       action: action || [],
       checked_text: data,
-    }
+    },
   };
 }
 
 /**
  * Try to parse current response data for tool calls (fallback mechanism).
- * 
+ *
  * @param data Response data that might contain JSON
  * @returns Array of actions found, empty if none
  */
@@ -387,7 +395,7 @@ function tryParseCurrentResponse(data: string): any[] {
 
 /**
  * Call LLM for prompt injection detection analysis.
- * 
+ *
  * @param ctx Guardrail context containing the LLM client
  * @param prompt Analysis prompt
  * @param config Configuration for prompt injection detection checking
@@ -401,7 +409,7 @@ async function callPromptInjectionDetectionLLM(
   try {
     const result = await runLLM(
       prompt,
-      "", // No additional system prompt needed, prompt contains everything
+      '', // No additional system prompt needed, prompt contains everything
       ctx.guardrailLlm,
       config.model,
       PromptInjectionDetectionOutput
@@ -411,22 +419,22 @@ async function callPromptInjectionDetectionLLM(
     return PromptInjectionDetectionOutput.parse(result);
   } catch (error) {
     // If runLLM fails validation, return a safe fallback PromptInjectionDetectionOutput
-    console.warn("Prompt injection detection LLM call failed, using fallback");
+    console.warn('Prompt injection detection LLM call failed, using fallback');
     return {
       flagged: false,
       confidence: 0.0,
-      observation: "LLM analysis failed - using fallback values"
+      observation: 'LLM analysis failed - using fallback values',
     };
   }
 }
 
 // Register the guardrail
 defaultSpecRegistry.register(
-  "Prompt Injection Detection",
+  'Prompt Injection Detection',
   promptInjectionDetectionCheck,
   "Guardrail that detects when function calls, outputs, or assistant responses are not aligned with the user's intent. Parses conversation history and uses LLM-based analysis for prompt injection detection checking.",
-  "text/plain",
+  'text/plain',
   PromptInjectionDetectionConfigRequired,
   undefined, // Context schema will be validated at runtime
-  { engine: "LLM" }
+  { engine: 'LLM' }
 );
