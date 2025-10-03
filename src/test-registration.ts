@@ -1,6 +1,6 @@
 /**
  * Test file to verify auto-registration of built-in guardrails.
- * 
+ *
  * This file demonstrates that importing the checks module automatically
  * registers all built-in guardrails with the defaultSpecRegistry.
  */
@@ -16,13 +16,13 @@ const allMetadata = defaultSpecRegistry.get_all_metadata();
 
 console.log(`Total registered guardrails: ${defaultSpecRegistry.size()}`);
 console.log('\nRegistered guardrails:');
-allMetadata.forEach(meta => {
-    console.log(`- ${meta.name}: ${meta.description}`);
-    console.log(`  Media type: ${meta.mediaType}`);
-    console.log(`  Has config: ${meta.hasConfig}`);
-    console.log(`  Has context: ${meta.hasContext}`);
-    console.log(`  Engine: ${meta.metadata?.engine || 'unknown'}`);
-    console.log('');
+allMetadata.forEach((meta) => {
+  console.log(`- ${meta.name}: ${meta.description}`);
+  console.log(`  Media type: ${meta.mediaType}`);
+  console.log(`  Has config: ${meta.hasConfig}`);
+  console.log(`  Has context: ${meta.hasContext}`);
+  console.log(`  Engine: ${meta.metadata?.engine || 'unknown'}`);
+  console.log('');
 });
 
 // Test getting specific guardrails
@@ -36,11 +36,11 @@ console.log(`- urls: ${urlsSpec ? '✅ Found' : '❌ Not found'}`);
 console.log(`- pii: ${piiSpec ? '✅ Found' : '❌ Not found'}`);
 
 if (keywordsSpec) {
-    console.log('\nKeywords guardrail details:');
-    console.log(`  Name: ${keywordsSpec.name}`);
-    console.log(`  Description: ${keywordsSpec.description}`);
-    console.log(`  Media type: ${keywordsSpec.mediaType}`);
-    console.log(`  Config schema: ${keywordsSpec.configSchema ? 'Available' : 'None'}`);
+  console.log('\nKeywords guardrail details:');
+  console.log(`  Name: ${keywordsSpec.name}`);
+  console.log(`  Description: ${keywordsSpec.description}`);
+  console.log(`  Media type: ${keywordsSpec.mediaType}`);
+  console.log(`  Config schema: ${keywordsSpec.configSchema ? 'Available' : 'None'}`);
 }
 
 export { allSpecs, allMetadata };
