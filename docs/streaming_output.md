@@ -2,7 +2,7 @@
 
 Guardrails supports two approaches for handling LLM output: non-streaming (safe, default) and streaming (fast). The choice balances safety vs. speed.
 
-## Non-Streaming: Safe and Reliable (Default)
+## Non-Streaming (blocking): Safe and Reliable (Default)
 
 ![Safe Pipeline](assets/images/slow_pipeline.png)
 
