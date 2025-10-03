@@ -241,6 +241,7 @@ describe('GuardrailAgent', () => {
         });
 
         it('should handle guardrail execution errors based on raiseGuardrailErrors setting', async () => {
+            process.env.OPENAI_API_KEY = 'test';
             const config = {
                 version: 1,
                 input: {
