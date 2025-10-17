@@ -79,7 +79,7 @@ export class AsyncRunEngine implements RunEngine {
       const results = await runGuardrails(sample.data, bundle, context);
 
       const triggered: Record<string, boolean> = {};
-      const details: Record<string, any> = {};
+      const details: Record<string, unknown> = {};
 
       // Initialize all guardrails as not triggered
       for (const name of this.guardrailNames) {

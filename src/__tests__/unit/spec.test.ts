@@ -8,13 +8,13 @@
  * - Validation
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GuardrailSpec, GuardrailSpecMetadata } from '../../spec';
 import { CheckFn } from '../../types';
 import { z } from 'zod';
 
 // Mock check function for testing
-const mockCheck: CheckFn<any, any, any> = (ctx, data, config) => ({
+const mockCheck: CheckFn<any, any, any> = (ctx, data) => ({
   tripwireTriggered: false,
   info: {
     checked_text: data,

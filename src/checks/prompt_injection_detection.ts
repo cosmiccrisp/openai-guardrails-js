@@ -25,14 +25,17 @@
  */
 
 import { z } from 'zod';
+import { OpenAI } from 'openai';
 import {
   CheckFn,
   GuardrailResult,
   GuardrailLLMContext,
   GuardrailLLMContextWithHistory,
+  TextOnlyMessageArray,
+  TextOnlyContent,
 } from '../types';
 import { defaultSpecRegistry } from '../registry';
-import { LLMConfig, LLMOutput, runLLM } from './llm-base';
+import { LLMOutput, runLLM } from './llm-base';
 
 /**
  * Configuration schema for the prompt injection detection guardrail.
@@ -123,7 +126,7 @@ interface UserIntentDict {
  */
 interface ParsedConversation {
   user_intent: UserIntentDict;
-  new_llm_actions: any[];
+  new_llm_actions: Record<string, unknown>[];
 }
 
 /**
@@ -159,7 +162,7 @@ export const promptInjectionDetectionCheck: CheckFn<
 
     // Parse only new conversation data since last check
     const { user_intent, new_llm_actions: initial_llm_actions } = parseConversationHistory(
-      conversationHistory,
+      conversationHistory as TextOnlyMessageArray,
       lastCheckedIndex
     );
 
@@ -248,14 +251,14 @@ ${contextText}`;
  * @returns Parsed conversation data with user intent and new LLM actions
  */
 function parseConversationHistory(
-  conversationHistory: any[],
+  conversationHistory: TextOnlyMessageArray,
   lastCheckedIndex: number
 ): ParsedConversation {
   // Always get full user intent context for proper analysis
   const user_intent = extractUserIntentFromMessages(conversationHistory);
 
   // Get only new LLM actions since the last check
-  let new_llm_actions: any[];
+  let new_llm_actions: Record<string, unknown>[];
   if (lastCheckedIndex >= conversationHistory.length) {
     // No new actions since last check
     new_llm_actions = [];
@@ -276,7 +279,7 @@ function parseConversationHistory(
  * @param action Action object to check
  * @returns True if action should be analyzed for alignment
  */
-function isFunctionCallOrOutput(action: any): boolean {
+function isFunctionCallOrOutput(action: Record<string, unknown>): boolean {
   if (typeof action !== 'object' || action === null) {
     return false;
   }
@@ -287,7 +290,7 @@ function isFunctionCallOrOutput(action: any): boolean {
   }
 
   // Chat completions API formats
-  if (action.role === 'assistant' && action.tool_calls?.length > 0) {
+  if (action.role === 'assistant' && 'tool_calls' in action && action.tool_calls && Array.isArray(action.tool_calls) && action.tool_calls.length > 0) {
     return true; // Assistant message with tool calls
   }
   if (action.role === 'tool') {
@@ -303,18 +306,12 @@ function isFunctionCallOrOutput(action: any): boolean {
  * @param content Message content (string, array, or other)
  * @returns Extracted text string
  */
-function extractContentText(content: any): string {
+function extractContentText(content: TextOnlyContent): string {
   if (typeof content === 'string') {
     return content;
   }
-  if (Array.isArray(content)) {
-    // For responses API format with content parts
-    return content
-      .filter((part) => part?.type === 'input_text' && typeof part.text === 'string')
-      .map((part) => part.text)
-      .join(' ');
-  }
-  return String(content || '');
+  // Array content - all parts are TextContentPart (guaranteed by type system)
+  return content.map(part => part.text).join(' ');
 }
 
 /**
@@ -323,7 +320,7 @@ function extractContentText(content: any): string {
  * @param messages List of conversation messages
  * @returns User intent dictionary with most recent message and previous context
  */
-function extractUserIntentFromMessages(messages: any[]): UserIntentDict {
+function extractUserIntentFromMessages(messages: TextOnlyMessageArray): UserIntentDict {
   const userMessages: string[] = [];
 
   // Extract all user messages in chronological order
@@ -358,7 +355,7 @@ function createSkipResult(
   threshold: number,
   data: string,
   userGoal: string = 'N/A',
-  action: any = null
+  action: Record<string, unknown>[] | null = null
 ): GuardrailResult {
   return {
     tripwireTriggered: false,
@@ -381,7 +378,7 @@ function createSkipResult(
  * @param data Response data that might contain JSON
  * @returns Array of actions found, empty if none
  */
-function tryParseCurrentResponse(data: string): any[] {
+function tryParseCurrentResponse(data: string): Record<string, unknown>[] {
   try {
     const currentResponse = JSON.parse(data);
     if (currentResponse?.choices?.[0]?.message?.tool_calls?.length > 0) {
@@ -410,14 +407,14 @@ async function callPromptInjectionDetectionLLM(
     const result = await runLLM(
       prompt,
       '', // No additional system prompt needed, prompt contains everything
-      ctx.guardrailLlm,
+      ctx.guardrailLlm as OpenAI, // Type assertion to handle OpenAI client compatibility
       config.model,
       PromptInjectionDetectionOutput
     );
 
     // Validate the result matches PromptInjectionDetectionOutput schema
     return PromptInjectionDetectionOutput.parse(result);
-  } catch (error) {
+  } catch {
     // If runLLM fails validation, return a safe fallback PromptInjectionDetectionOutput
     console.warn('Prompt injection detection LLM call failed, using fallback');
     return {

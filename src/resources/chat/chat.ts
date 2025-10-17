@@ -1,10 +1,13 @@
-/* eslint-disable no-dupe-class-members */
 /**
  * Chat completions with guardrails.
  */
 
+/* eslint-disable no-dupe-class-members */
 import { OpenAI } from 'openai';
 import { GuardrailsBaseClient, GuardrailsResponse } from '../../base-client';
+
+// Note: We need to filter out non-text content since guardrails only work with text
+// The existing extractLatestUserMessage method expects TextOnlyMessageArray
 
 /**
  * Chat completions with guardrails.
@@ -58,20 +61,27 @@ export class ChatCompletions {
   ): Promise<GuardrailsResponse<OpenAI.Chat.Completions.ChatCompletion> | AsyncIterableIterator<GuardrailsResponse>> {
     const { messages, model, stream = false, suppressTripwire = false, ...kwargs } = params;
 
-    const [latestMessage] = this.client.extractLatestUserMessage(messages);
+    // Filter to text-only messages for guardrails (guardrails only work with text content)
+    const textOnlyMessages = messages
+      .filter((msg): msg is OpenAI.Chat.Completions.ChatCompletionUserMessageParam => 
+        msg.role === 'user' && typeof msg.content === 'string'
+      )
+      .map(msg => ({ role: msg.role, content: msg.content as string }));
+    
+    const [latestMessage] = this.client.extractLatestUserMessage(textOnlyMessages);
 
     // Preflight first
     const preflightResults = await this.client.runStageGuardrails(
       'pre_flight',
       latestMessage,
-      messages,
+      textOnlyMessages,
       suppressTripwire,
       this.client.raiseGuardrailErrors
     );
 
     // Apply pre-flight modifications (PII masking, etc.)
     const modifiedMessages = this.client.applyPreflightModifications(
-      messages,
+      textOnlyMessages,
       preflightResults
     );
 
@@ -80,10 +90,12 @@ export class ChatCompletions {
       this.client.runStageGuardrails(
         'input',
         latestMessage,
-        messages,
+        textOnlyMessages,
         suppressTripwire,
         this.client.raiseGuardrailErrors
       ),
+      // Access protected _resourceClient - necessary for external resource classes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (this.client as any)._resourceClient.chat.completions.create({
         messages: modifiedMessages,
         model,
@@ -100,15 +112,17 @@ export class ChatCompletions {
         llmResponse,
         preflightResults,
         inputResults,
-        messages,
+        textOnlyMessages,
         suppressTripwire
       );
     } else {
+      // Access protected handleLlmResponse - necessary for external resource classes
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (this.client as any).handleLlmResponse(
         llmResponse,
         preflightResults,
         inputResults,
-        messages,
+        textOnlyMessages,
         suppressTripwire
       );
     }

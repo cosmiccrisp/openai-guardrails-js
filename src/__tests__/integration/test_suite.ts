@@ -5,11 +5,7 @@
  * guardrail configurations using the new GuardrailsClient design.
  */
 
-import { GuardrailsOpenAI } from '../../index.js';
-
-interface Context {
-  guardrail_llm: any; // OpenAI client
-}
+import { GuardrailsOpenAI, GuardrailsResponse } from '../../index.js';
 
 class GuardrailTest {
   /** Represents a complete test case for a guardrail. */
@@ -346,8 +342,7 @@ interface TestSuiteResults {
 
 async function runTest(
   test: GuardrailTest,
-  guardrailsClient: GuardrailsOpenAI,
-  mediaType: string = 'text/plain'
+  guardrailsClient: GuardrailsOpenAI
 ): Promise<TestResult> {
   /** Run a single guardrail test and collect its results. */
   const results: TestResult = {
@@ -366,7 +361,7 @@ async function runTest(
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: case_ }],
         suppressTripwire: true,
-      });
+      } as any) as GuardrailsResponse;
 
       // Check if any guardrails were triggered
       const tripwireTriggered = response.guardrail_results.tripwiresTriggered;
@@ -416,7 +411,7 @@ async function runTest(
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: case_ }],
         suppressTripwire: true,
-      });
+      } as any) as GuardrailsResponse;
 
       // Check if any guardrails were triggered
       const tripwireTriggered = response.guardrail_results.tripwiresTriggered;
@@ -461,8 +456,7 @@ async function runTest(
 }
 
 async function runTestSuite(
-  testFilter?: string,
-  mediaType: string = 'text/plain'
+  testFilter?: string
 ): Promise<TestSuiteResults> {
   /** Run all or a subset of guardrail tests and summarize results. */
   const results: TestSuiteResults = {
@@ -504,7 +498,7 @@ async function runTestSuite(
     // Initialize GuardrailsOpenAI for this test
     const guardrailsClient = await GuardrailsOpenAI.create(pipelineConfig);
 
-    const outcome = await runTest(test, guardrailsClient, mediaType);
+    const outcome = await runTest(test, guardrailsClient);
     results.tests.push(outcome);
 
     // Calculate test status
@@ -592,7 +586,7 @@ async function main(): Promise<void> {
   console.log(`Test filter: ${args.test || 'all'}`);
   console.log(`Media type: ${args.mediaType}`);
 
-  const results = await runTestSuite(args.test, args.mediaType);
+  const results = await runTestSuite(args.test);
 
   printSummary(results);
 

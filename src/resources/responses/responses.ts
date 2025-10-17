@@ -1,9 +1,10 @@
 /**
  * Responses API with guardrails.
  */
-
+/* eslint-disable no-dupe-class-members */
 import { OpenAI } from 'openai';
 import { GuardrailsBaseClient, GuardrailsResponse } from '../../base-client';
+import { TextOnlyMessageArray } from '../../types';
 
 /**
  * Responses API with guardrails.
@@ -19,7 +20,7 @@ export class Responses {
   // Overload: streaming
   create(
     params: {
-      input: string | unknown[];
+      input: string | Array<{ role: string; content: unknown }>;
       model: string;
       stream: true;
       tools?: unknown[];
@@ -28,10 +29,9 @@ export class Responses {
   ): Promise<AsyncIterableIterator<GuardrailsResponse>>;
 
   // Overload: non-streaming (default)
-  /* eslint-disable no-dupe-class-members */
   create(
     params: {
-      input: string | unknown[];
+      input: string | Array<{ role: string; content: unknown }>;
       model: string;
       stream?: false;
       tools?: unknown[];
@@ -41,7 +41,7 @@ export class Responses {
 
   async create(
     params: {
-      input: string | unknown[];
+      input: string | Array<{ role: string; content: unknown }>;
       model: string;
       stream?: boolean;
       tools?: unknown[];
@@ -52,8 +52,22 @@ export class Responses {
 
     // Determine latest user message text when a list of messages is provided
     let latestMessage: string;
+    let textOnlyMessages: TextOnlyMessageArray | undefined;
     if (Array.isArray(input)) {
-      [latestMessage] = (this.client).extractLatestUserMessage(input);
+      // Filter to text-only messages for guardrails (guardrails only work with text content)
+      textOnlyMessages = input
+        .filter((msg): msg is { role: string; content: string } => 
+          typeof msg === 'object' && 
+          msg !== null && 
+          'role' in msg && 
+          'content' in msg &&
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (msg as any).role === 'user' && 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          typeof (msg as any).content === 'string'
+        )
+        .map(msg => ({ role: msg.role, content: msg.content }));
+      [latestMessage] = this.client.extractLatestUserMessage(textOnlyMessages);
     } else {
       latestMessage = input;
     }
@@ -62,23 +76,27 @@ export class Responses {
     const preflightResults = await this.client.runStageGuardrails(
       'pre_flight',
       latestMessage,
-      Array.isArray(input) ? input : undefined,
+      textOnlyMessages,
       suppressTripwire,
       this.client.raiseGuardrailErrors
     );
 
     // Apply pre-flight modifications (PII masking, etc.)
-    const modifiedInput = this.client.applyPreflightModifications(input, preflightResults);
+    const modifiedInput = this.client.applyPreflightModifications(
+      Array.isArray(input) ? textOnlyMessages! : input, 
+      preflightResults
+    );
 
     // Input guardrails and LLM call concurrently
     const [inputResults, llmResponse] = await Promise.all([
       this.client.runStageGuardrails(
         'input',
         latestMessage,
-        Array.isArray(input) ? input : undefined,
+        textOnlyMessages,
         suppressTripwire,
         this.client.raiseGuardrailErrors
       ),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (this.client as any)._resourceClient.responses.create({
         input: modifiedInput,
         model,
@@ -96,15 +114,16 @@ export class Responses {
         llmResponse,
         preflightResults,
         inputResults,
-        input,
+        textOnlyMessages || input,
         suppressTripwire
       );
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (this.client as any).handleLlmResponse(
         llmResponse,
         preflightResults,
         inputResults,
-        input,
+        textOnlyMessages || input,
         suppressTripwire
       );
     }

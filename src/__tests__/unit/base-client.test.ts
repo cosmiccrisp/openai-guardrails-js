@@ -11,12 +11,25 @@ import { GuardrailsBaseClient, GuardrailResultsImpl, StageGuardrails } from '../
 import { GuardrailTripwireTriggered } from '../../exceptions';
 import { GuardrailLLMContext, GuardrailResult } from '../../types';
 
-interface MockGuardrail {
-  definition: {
-    name: string;
-    metadata?: Record<string, unknown>;
+// Removed unused interface
+
+interface MockPipeline {
+  stages: string[];
+  config: Record<string, unknown>;
+}
+
+// Interface for response with guardrail results
+interface ResponseWithGuardrailResults {
+  guardrail_results: {
+    output: GuardrailResult[];
   };
-  run: ReturnType<typeof vi.fn>;
+}
+
+// Interface for accessing private methods in tests
+interface TestGuardrailsClient {
+  createContextWithConversation(): GuardrailLLMContext;
+  runStageGuardrails(...args: any[]): Promise<GuardrailResult[]>;
+  handleLlmResponse(...args: any[]): Promise<any>;
 }
 
 class TestGuardrailsClient extends GuardrailsBaseClient {
@@ -28,7 +41,7 @@ class TestGuardrailsClient extends GuardrailsBaseClient {
     (this as any).guardrails = guardrails;
   }
 
-  public setPipeline(pipeline: any): void {
+  public setPipeline(pipeline: MockPipeline): void {
     (this as any).pipeline = pipeline;
   }
 
@@ -44,7 +57,7 @@ class TestGuardrailsClient extends GuardrailsBaseClient {
 const createGuardrail = (
   name: string,
   implementation: (ctx: any, text: string) => GuardrailResult | Promise<GuardrailResult>
-): MockGuardrail => ({
+): any => ({
   definition: { name },
   run: vi.fn(implementation),
 });
@@ -79,12 +92,12 @@ describe('GuardrailsBaseClient helpers', () => {
 
     it('handles responses API content parts', () => {
       const messages = [
-        { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+        { role: 'user', content: [{ type: 'text' as const, text: 'hello' }] },
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'part1' },
-            { type: 'text', text: 'part2' },
+            { type: 'text' as const, text: 'part1' },
+            { type: 'text' as const, text: 'part2' },
           ],
         },
       ];
@@ -110,6 +123,7 @@ describe('GuardrailsBaseClient helpers', () => {
         {
           tripwireTriggered: false,
           info: {
+            checked_text: 'Reach me at alice@example.com',
             detected_entities: {
               EMAIL: ['alice@example.com'],
             },
@@ -131,8 +145,8 @@ describe('GuardrailsBaseClient helpers', () => {
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Call me at 123-456-7890' },
-            { type: 'text', text: 'or email alice@example.com' },
+            { type: 'text' as const, text: 'Call me at 123-456-7890' },
+            { type: 'text' as const, text: 'or email alice@example.com' },
           ],
         },
       ];
@@ -141,6 +155,7 @@ describe('GuardrailsBaseClient helpers', () => {
         {
           tripwireTriggered: false,
           info: {
+            checked_text: 'Call me at 123-456-7890 or email alice@example.com',
             detected_entities: {
               PHONE: ['123-456-7890'],
               EMAIL: ['alice@example.com'],
@@ -149,11 +164,21 @@ describe('GuardrailsBaseClient helpers', () => {
         },
       ];
 
-      const masked = client.applyPreflightModifications(messages, results) as any[];
+      interface MessageContent {
+        type: string;
+        text: string;
+      }
+      
+      interface Message {
+        role: string;
+        content: string | MessageContent[];
+      }
+      
+      const masked = client.applyPreflightModifications(messages, results) as Message[];
       const [, latestMessage] = masked;
 
-      expect(latestMessage.content[0].text).toBe('Call me at <PHONE>');
-      expect(latestMessage.content[1].text).toBe('or email <EMAIL>');
+      expect((latestMessage.content as MessageContent[])[0].text).toBe('Call me at <PHONE>');
+      expect((latestMessage.content as MessageContent[])[1].text).toBe('or email <EMAIL>');
       // Ensure assistant message unchanged
       expect(masked[0]).toEqual(messages[0]);
     });
@@ -173,7 +198,7 @@ describe('GuardrailsBaseClient helpers', () => {
 
     beforeEach(() => {
       client.setGuardrails({
-        pre_flight: [createGuardrail('Test Guard', async () => ({ ...baseResult }))],
+        pre_flight: [createGuardrail('Test Guard', async () => ({ ...baseResult, info: { ...baseResult.info, checked_text: 'payload' } }))],
         input: [],
         output: [],
       });
@@ -194,7 +219,7 @@ describe('GuardrailsBaseClient helpers', () => {
         pre_flight: [
           createGuardrail('Tripwire', async () => ({
             tripwireTriggered: true,
-            info: { reason: 'bad' },
+            info: { checked_text: 'payload', reason: 'bad' },
           })),
         ],
         input: [],
@@ -211,7 +236,7 @@ describe('GuardrailsBaseClient helpers', () => {
         pre_flight: [
           createGuardrail('Tripwire', async () => ({
             tripwireTriggered: true,
-            info: { reason: 'bad' },
+            info: { checked_text: 'payload', reason: 'bad' },
           })),
         ],
         input: [],
@@ -242,14 +267,14 @@ describe('GuardrailsBaseClient helpers', () => {
     it('creates a conversation-aware context for prompt injection detection guardrails', async () => {
       const guardrail = createGuardrail('Prompt Injection Detection', async () => ({
         tripwireTriggered: false,
-        info: {},
+        info: { checked_text: 'payload' },
       }));
       client.setGuardrails({
         pre_flight: [guardrail],
         input: [],
         output: [],
       });
-      const spy = vi.spyOn(client as any, 'createContextWithConversation');
+      const spy = vi.spyOn(client as TestGuardrailsClient, 'createContextWithConversation');
 
       await client.runStageGuardrails(
         'pre_flight',
@@ -266,16 +291,25 @@ describe('GuardrailsBaseClient helpers', () => {
   describe('handleLlmResponse', () => {
     it('appends LLM response to conversation history and returns guardrail results', async () => {
       const conversation = [{ role: 'user', content: 'hi' }];
-      const outputResult = { tripwireTriggered: false, info: {} };
+      const outputResult = { tripwireTriggered: false, info: { checked_text: 'All good' } };
+      interface MockLLMResponse {
+        choices: Array<{
+          message: {
+            role: string;
+            content: string;
+          };
+        }>;
+      }
+
       const runSpy = vi
-        .spyOn(client as any, 'runStageGuardrails')
+        .spyOn(client as TestGuardrailsClient, 'runStageGuardrails')
         .mockResolvedValue([outputResult]);
 
-      const llmResponse: any = {
+      const llmResponse: MockLLMResponse = {
         choices: [{ message: { role: 'assistant', content: 'All good' } }],
       };
 
-      const response = await (client as any).handleLlmResponse(
+      const response = await (client as TestGuardrailsClient).handleLlmResponse(
         llmResponse,
         [],
         [],
@@ -291,8 +325,8 @@ describe('GuardrailsBaseClient helpers', () => {
         ]),
         false
       );
-      expect(response.guardrail_results).toBeInstanceOf(GuardrailResultsImpl);
-      expect(response.guardrail_results.output).toEqual([outputResult]);
+      expect((response as ResponseWithGuardrailResults).guardrail_results).toBeInstanceOf(GuardrailResultsImpl);
+      expect((response as ResponseWithGuardrailResults).guardrail_results.output).toEqual([outputResult]);
     });
   });
 });

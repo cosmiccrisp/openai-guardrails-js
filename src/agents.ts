@@ -6,8 +6,23 @@
  * configuration file.
  */
 
-import { GuardrailLLMContext } from './types';
-import { loadPipelineBundles, instantiateGuardrails, PipelineConfig } from './runtime';
+import { GuardrailLLMContext, GuardrailResult } from './types';
+import { loadPipelineBundles, instantiateGuardrails, PipelineConfig, GuardrailBundle, ConfiguredGuardrail } from './runtime';
+
+// Import Agents SDK types for better type safety
+import type { 
+  InputGuardrail, 
+  OutputGuardrail, 
+  InputGuardrailFunctionArgs, 
+  OutputGuardrailFunctionArgs
+} from '@openai/agents-core';
+
+// Type for agent output that might have different structures
+interface AgentOutput {
+  response?: string;
+  finalOutput?: string | unknown;
+  [key: string]: unknown;
+}
 
 /**
  * Drop-in replacement for Agents SDK Agent with automatic guardrails integration.
@@ -55,9 +70,9 @@ export class GuardrailAgent {
     config: string | PipelineConfig,
     name: string,
     instructions: string,
-    agentKwargs: Record<string, any> = {},
+    agentKwargs: Record<string, unknown> = {},
     raiseGuardrailErrors: boolean = false
-  ): Promise<any> {
+  ): Promise<unknown> {
     // Returns agents.Agent
     try {
       // Dynamic import to avoid bundling issues
@@ -68,20 +83,20 @@ export class GuardrailAgent {
       const pipeline = await loadPipelineBundles(config);
 
       // Create input guardrails from pre_flight and input stages
-      const inputGuardrails = [];
-      if ((pipeline as any).pre_flight) {
+      const inputGuardrails: InputGuardrail[] = [];
+      if ((pipeline as Record<string, unknown>).pre_flight) {
         const preFlightGuardrails = await createInputGuardrailsFromStage(
           'pre_flight',
-          (pipeline as any).pre_flight,
+          (pipeline as Record<string, unknown>).pre_flight as GuardrailBundle,
           undefined,
           raiseGuardrailErrors
         );
         inputGuardrails.push(...preFlightGuardrails);
       }
-      if ((pipeline as any).input) {
+      if ((pipeline as Record<string, unknown>).input) {
         const inputStageGuardrails = await createInputGuardrailsFromStage(
           'input',
-          (pipeline as any).input,
+          (pipeline as Record<string, unknown>).input as GuardrailBundle,
           undefined,
           raiseGuardrailErrors
         );
@@ -89,11 +104,11 @@ export class GuardrailAgent {
       }
 
       // Create output guardrails from output stage
-      const outputGuardrails = [];
-      if ((pipeline as any).output) {
+      const outputGuardrails: OutputGuardrail[] = [];
+      if ((pipeline as Record<string, unknown>).output) {
         const outputStageGuardrails = await createOutputGuardrailsFromStage(
           'output',
-          (pipeline as any).output,
+          (pipeline as Record<string, unknown>).output as GuardrailBundle,
           undefined,
           raiseGuardrailErrors
         );
@@ -121,130 +136,155 @@ export class GuardrailAgent {
 
 async function createInputGuardrailsFromStage(
   stageName: string,
-  stageConfig: any,
+  stageConfig: GuardrailBundle,
   context?: GuardrailLLMContext,
   raiseGuardrailErrors: boolean = false
-): Promise<any[]> {
+): Promise<InputGuardrail[]> {
   // Instantiate guardrails for this stage
-  const guardrails = await instantiateGuardrails(stageConfig);
+  const guardrails: ConfiguredGuardrail[] = await instantiateGuardrails(stageConfig);
 
-  return guardrails.map((guardrail: any) => ({
-    name: `${stageName}: ${guardrail.name || guardrail.definition?.name || 'Unknown Guardrail'}`,
-    execute: async ({ input, context: agentContext }: { input: string; context?: any }) => {
-      try {
-        // Create a proper context with OpenAI client if needed
-        let guardContext = context || agentContext || {};
-        if (!guardContext.guardrailLlm) {
-          const { OpenAI } = require('openai');
-          guardContext = {
-            ...guardContext,
-            guardrailLlm: new OpenAI(),
-          };
-        }
+  return guardrails.map((guardrail: ConfiguredGuardrail) => {
+    return {
+      name: `${stageName}: ${guardrail.definition.name || 'Unknown Guardrail'}`,
+      execute: async (args: InputGuardrailFunctionArgs) => {
+        const { input, context: agentContext } = args;
+        try {
+          // Extract text from input - handle both string and message object formats
+          let inputText = '';
+          if (typeof input === 'string') {
+            inputText = input;
+          } else if (input && typeof input === 'object' && 'content' in input) {
+            const content = input.content;
+            if (typeof content === 'string') {
+              inputText = content;
+            } else if (Array.isArray(content)) {
+              // Extract text from content array
+              inputText = content
+                .filter((item: unknown) => 
+                  item && typeof item === 'object' && 
+                  'type' in item && 
+                  (item.type === 'input_text' || item.type === 'text')
+                )
+                .map((item: unknown) => 
+                  item && typeof item === 'object' && 'text' in item ? 
+                  (item as { text: string }).text : ''
+                )
+                .join(' ');
+            }
+          }
 
-        const result = await guardrail.run(guardContext, input);
+          // Create a proper context with OpenAI client if needed
+          let guardContext: GuardrailLLMContext = (context as unknown as GuardrailLLMContext) || (agentContext as unknown as GuardrailLLMContext) || {} as GuardrailLLMContext;
+          if (!guardContext.guardrailLlm) {
+            const { OpenAI } = require('openai');
+            guardContext = {
+              ...guardContext,
+              guardrailLlm: new OpenAI(),
+            };
+          }
 
-        // Check for execution failures when raiseGuardrailErrors=true
-        if (raiseGuardrailErrors && result.executionFailed) {
-          throw result.originalException;
-        }
+          const result: GuardrailResult = await guardrail.run(guardContext, inputText);
 
-        return {
-          outputInfo: result.info || null,
-          tripwireTriggered: result.tripwireTriggered || false,
-        };
-      } catch (error) {
-        if (raiseGuardrailErrors) {
-          // Re-raise the exception to stop execution
-          throw error;
-        } else {
-          // When raiseGuardrailErrors=false, treat errors as safe and continue execution
-          // Return tripwireTriggered=false to allow execution to continue
+          // Check for execution failures when raiseGuardrailErrors=true
+          if (raiseGuardrailErrors && result.executionFailed) {
+            throw result.originalException;
+          }
+
           return {
-            outputInfo: {
-              error: error instanceof Error ? error.message : String(error),
-              guardrail_name: guardrail.name || 'unknown',
-            },
-            tripwireTriggered: false,
+            outputInfo: result.info || null,
+            tripwireTriggered: result.tripwireTriggered || false,
           };
+        } catch (error) {
+          if (raiseGuardrailErrors) {
+            // Re-raise the exception to stop execution
+            throw error;
+          } else {
+            // When raiseGuardrailErrors=false, treat errors as safe and continue execution
+            // Return tripwireTriggered=false to allow execution to continue
+            return {
+              outputInfo: {
+                error: error instanceof Error ? error.message : String(error),
+                guardrail_name: guardrail.definition.name || 'unknown',
+              },
+              tripwireTriggered: false,
+            };
+          }
         }
       }
-    },
-  }));
+    };
+  });
 }
 
 async function createOutputGuardrailsFromStage(
   stageName: string,
-  stageConfig: any,
+  stageConfig: GuardrailBundle,
   context?: GuardrailLLMContext,
   raiseGuardrailErrors: boolean = false
-): Promise<any[]> {
+): Promise<OutputGuardrail[]> {
   // Instantiate guardrails for this stage
-  const guardrails = await instantiateGuardrails(stageConfig);
+  const guardrails: ConfiguredGuardrail[] = await instantiateGuardrails(stageConfig);
 
-  return guardrails.map((guardrail: any) => ({
-    name: `${stageName}: ${guardrail.name || guardrail.definition?.name || 'Unknown Guardrail'}`,
-    execute: async ({
-      agentOutput,
-      context: agentContext,
-    }: {
-      agentOutput: any;
-      context?: any;
-    }) => {
-      try {
-        // Extract the output text - could be in different formats
-        let outputText = '';
-        if (typeof agentOutput === 'string') {
-          outputText = agentOutput;
-        } else if (agentOutput?.response) {
-          outputText = agentOutput.response;
-        } else if (agentOutput?.finalOutput) {
-          outputText =
-            typeof agentOutput.finalOutput === 'string'
-              ? agentOutput.finalOutput
-              : JSON.stringify(agentOutput.finalOutput);
-        } else {
-          // Try to extract any string content
-          outputText = JSON.stringify(agentOutput);
-        }
+  return guardrails.map((guardrail: ConfiguredGuardrail) => {
+    return {
+      name: `${stageName}: ${guardrail.definition.name || 'Unknown Guardrail'}`,
+      execute: async (args: OutputGuardrailFunctionArgs) => {
+        const { agentOutput, context: agentContext } = args;
+        try {
+          // Extract the output text - could be in different formats
+          let outputText = '';
+          if (typeof agentOutput === 'string') {
+            outputText = agentOutput;
+          } else if (agentOutput && typeof agentOutput === 'object' && 'response' in agentOutput) {
+            outputText = (agentOutput as AgentOutput).response || '';
+          } else if (agentOutput && typeof agentOutput === 'object' && 'finalOutput' in agentOutput) {
+            const finalOutput = (agentOutput as AgentOutput).finalOutput;
+            outputText =
+              typeof finalOutput === 'string'
+                ? finalOutput
+                : JSON.stringify(finalOutput);
+          } else {
+            // Try to extract any string content
+            outputText = JSON.stringify(agentOutput);
+          }
 
-        // Create a proper context with OpenAI client if needed
-        let guardContext = context || agentContext || {};
-        if (!guardContext.guardrailLlm) {
-          const { OpenAI } = require('openai');
-          guardContext = {
-            ...guardContext,
-            guardrailLlm: new OpenAI(),
-          };
-        }
+          // Create a proper context with OpenAI client if needed
+          let guardContext: GuardrailLLMContext = (context as unknown as GuardrailLLMContext) || (agentContext as unknown as GuardrailLLMContext) || {} as GuardrailLLMContext;
+          if (!guardContext.guardrailLlm) {
+            const { OpenAI } = require('openai');
+            guardContext = {
+              ...guardContext,
+              guardrailLlm: new OpenAI(),
+            };
+          }
 
-        const result = await guardrail.run(guardContext, outputText);
+          const result: GuardrailResult = await guardrail.run(guardContext, outputText);
 
-        // Check for execution failures when raiseGuardrailErrors=true
-        if (raiseGuardrailErrors && result.executionFailed) {
-          throw result.originalException;
-        }
+          // Check for execution failures when raiseGuardrailErrors=true
+          if (raiseGuardrailErrors && result.executionFailed) {
+            throw result.originalException;
+          }
 
-        return {
-          outputInfo: result.info || null,
-          tripwireTriggered: result.tripwireTriggered || false,
-        };
-      } catch (error) {
-        if (raiseGuardrailErrors) {
-          // Re-raise the exception to stop execution
-          throw error;
-        } else {
-          // When raiseGuardrailErrors=false, treat errors as safe and continue execution
-          // Return tripwireTriggered=false to allow execution to continue
           return {
-            outputInfo: {
-              error: error instanceof Error ? error.message : String(error),
-              guardrail_name: guardrail.name || 'unknown',
-            },
-            tripwireTriggered: false,
+            outputInfo: result.info || null,
+            tripwireTriggered: result.tripwireTriggered || false,
           };
+        } catch (error) {
+          if (raiseGuardrailErrors) {
+            // Re-raise the exception to stop execution
+            throw error;
+          } else {
+            // When raiseGuardrailErrors=false, treat errors as safe and continue execution
+            // Return tripwireTriggered=false to allow execution to continue
+            return {
+              outputInfo: {
+                error: error instanceof Error ? error.message : String(error),
+                guardrail_name: guardrail.definition.name || 'unknown',
+              },
+              tripwireTriggered: false,
+            };
+          }
         }
       }
-    },
-  }));
+    };
+  });
 }

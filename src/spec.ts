@@ -8,7 +8,7 @@
  */
 
 import { z } from 'zod';
-import { CheckFn, TContext, TIn, TCfg } from './types';
+import { CheckFn, TextInput } from './types';
 import { ConfiguredGuardrail } from './runtime';
 
 /**
@@ -21,7 +21,7 @@ export interface GuardrailSpecMetadata {
   /** How the guardrail is implemented (regex/LLM/etc.) */
   engine?: string;
   /** Additional metadata fields */
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -35,7 +35,7 @@ export interface GuardrailSpecMetadata {
  * but should be instantiated with user configuration to create a runnable guardrail
  * for actual use.
  */
-export class GuardrailSpec<TContext = any, TIn = any, TCfg = any> {
+export class GuardrailSpec<TContext = object, TIn = TextInput, TCfg = object> {
   constructor(
     public readonly name: string,
     public readonly description: string,
@@ -54,8 +54,8 @@ export class GuardrailSpec<TContext = any, TIn = any, TCfg = any> {
    *
    * @returns JSON schema describing the config model fields.
    */
-  schema(): Record<string, any> {
-    return this.configSchema._def;
+  schema(): Record<string, unknown> {
+    return this.configSchema._def as Record<string, unknown>;
   }
 
   /**

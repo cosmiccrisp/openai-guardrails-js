@@ -28,7 +28,7 @@ export interface GuardrailLLMContext {
  */
 export interface GuardrailLLMContextWithHistory extends GuardrailLLMContext {
   /** Get the full conversation history */
-  getConversationHistory(): any[];
+  getConversationHistory(): unknown[];
   /** Get the index of the last message that was checked for prompt injection detection */
   getInjectionLastCheckedIndex(): number;
   /** Update the index of the last message that was checked for prompt injection detection */
@@ -56,7 +56,7 @@ export interface GuardrailResult {
     /** The processed/checked text that should be used if modifications were made */
     checked_text: string;
     /** Additional guardrail-specific metadata */
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -86,5 +86,46 @@ export type MaybeAwaitableResult = GuardrailResult | Promise<GuardrailResult>;
  * - TCfg: object (any object, including interfaces and classes)
  */
 export type TContext = object;
-export type TIn = unknown;
+export type TIn = TextInput;
 export type TCfg = object;
+
+/**
+ * Type alias for text-only input to guardrails.
+ * Currently constrains guardrails to process only text content.
+ */
+export type TextInput = string;
+
+/**
+ * Text-only content types for guardrails.
+ * These types enforce that only text content is processed.
+ */
+
+/** Plain text content */
+export type TextContent = string;
+
+/** Text content part for structured content (Responses API) */
+export type TextContentPart = {
+  type: 'input_text' | 'text' | 'output_text' | 'summary_text';
+  text: string;
+};
+
+/** Union type for all text-only content */
+export type TextOnlyContent = TextContent | TextContentPart[];
+
+/** Message with text-only content */
+export type TextOnlyMessage = {
+  role: string;
+  content: TextOnlyContent;
+};
+
+/** Array of text-only messages */
+export type TextOnlyMessageArray = TextOnlyMessage[];
+
+/** Non-text content part (for future expansion) */
+export type NonTextContentPart = {
+  type: 'image' | 'video' | 'audio' | string;
+  [key: string]: unknown;
+};
+
+/** Union of all content parts */
+export type ContentPart = TextContentPart | NonTextContentPart;

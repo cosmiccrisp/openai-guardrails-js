@@ -10,7 +10,9 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { GuardrailMetricsCalculator, validateDataset, JsonResultsReporter } from '../../evals';
-import { Sample, SampleResult, GuardrailMetrics } from '../../evals/core/types';
+import { SampleResult, GuardrailMetrics } from '../../evals/core/types';
+
+// Using type assertion for fs.Stats mock due to complex union type requirements
 
 // Mock file system operations
 vi.mock('fs/promises', () => ({
@@ -101,7 +103,11 @@ describe('Evaluation Framework', () => {
   describe('validateDataset', () => {
     it('should validate valid dataset', async () => {
       const mockFs = await import('fs/promises');
-      vi.mocked(mockFs.stat).mockResolvedValue({} as any);
+      vi.mocked(mockFs.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+        size: 1024
+      } as any);
       vi.mocked(mockFs.readFile).mockResolvedValue(
         '{"id":"1","data":"Sample 1","expectedTriggers":{"test":true}}\n{"id":"2","data":"Sample 2","expectedTriggers":{"test":false}}'
       );
@@ -114,7 +120,11 @@ describe('Evaluation Framework', () => {
 
     it('should validate dataset with snake_case field names', async () => {
       const mockFs = await import('fs/promises');
-      vi.mocked(mockFs.stat).mockResolvedValue({} as any);
+      vi.mocked(mockFs.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+        size: 1024
+      } as any);
       vi.mocked(mockFs.readFile).mockResolvedValue(
         '{"id":"1","data":"Sample 1","expected_triggers":{"test":true}}\n{"id":"2","data":"Sample 2","expected_triggers":{"test":false}}'
       );
@@ -127,7 +137,11 @@ describe('Evaluation Framework', () => {
 
     it('should validate dataset with mixed field naming conventions', async () => {
       const mockFs = await import('fs/promises');
-      vi.mocked(mockFs.stat).mockResolvedValue({} as any);
+      vi.mocked(mockFs.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+        size: 1024
+      } as any);
       vi.mocked(mockFs.readFile).mockResolvedValue(
         '{"id":"1","data":"Sample 1","expectedTriggers":{"test":true}}\n{"id":"2","data":"Sample 2","expected_triggers":{"test":false}}'
       );
@@ -140,7 +154,11 @@ describe('Evaluation Framework', () => {
 
     it('should detect invalid dataset structure', async () => {
       const mockFs = await import('fs/promises');
-      vi.mocked(mockFs.stat).mockResolvedValue({} as any);
+      vi.mocked(mockFs.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+        size: 1024
+      } as any);
       vi.mocked(mockFs.readFile).mockResolvedValue(
         '{"id":"1","data":"Sample 1"}\n{"id":"2","expectedTriggers":{"test":false}}'
       );
@@ -152,7 +170,11 @@ describe('Evaluation Framework', () => {
 
     it('should handle malformed JSON', async () => {
       const mockFs = await import('fs/promises');
-      vi.mocked(mockFs.stat).mockResolvedValue({} as any);
+      vi.mocked(mockFs.stat).mockResolvedValue({
+        isFile: () => true,
+        isDirectory: () => false,
+        size: 1024
+      } as any);
       vi.mocked(mockFs.readFile).mockResolvedValue(
         'invalid json\n{"id":"1","data":"Sample 1","expectedTriggers":{"test":true}}'
       );
